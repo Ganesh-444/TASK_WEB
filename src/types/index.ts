@@ -13,6 +13,7 @@ export type Task = {
   deadline?: string;
   startedAt?: string;
   levelAtCompletion?: number;
+  isFailure?: boolean;
 };
 
 export type QuestTemplate = {

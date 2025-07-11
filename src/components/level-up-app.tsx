@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle
 } from 'lucide-react';
 import { format } from "date-fns";
 
@@ -81,6 +81,31 @@ export default function LevelUpApp() {
   const [questTemplates, setQuestTemplates] = useState<QuestTemplate[]>(defaultQuestTemplates);
   const [editingTemplate, setEditingTemplate] = useState<QuestTemplate | null>(null);
 
+  const userLevelInfo = useMemo(() => calculateLevelInfo(totalXp), [totalXp]);
+
+  const handleXpChange = useCallback((xpChange: number, attribute: Attribute) => {
+    const newTotalXp = totalXp + xpChange;
+    const oldLevel = userLevelInfo.level;
+    const newLevel = calculateLevelInfo(newTotalXp).level;
+
+    if (newLevel > oldLevel) {
+      setLevelUpInfo({ oldLevel, newLevel, dialogOpen: true });
+    } else if (newLevel < oldLevel) {
+      toast({
+          title: "Level Down!",
+          description: "You've lost a level. Keep trying!",
+          variant: "destructive"
+      });
+    }
+    
+    setTotalXp(newTotalXp);
+    setAttributeXp(prev => ({
+      ...prev,
+      [attribute]: prev[attribute] + xpChange
+    }));
+
+  }, [totalXp, userLevelInfo.level, toast]);
+
   useEffect(() => {
     document.body.classList.add('dark');
   }, []);
@@ -156,7 +181,53 @@ export default function LevelUpApp() {
   }, [newTaskDate, newTaskTime]);
 
 
-  const userLevelInfo = useMemo(() => calculateLevelInfo(totalXp), [totalXp]);
+  const checkOverdueTasks = useCallback(() => {
+    const now = new Date();
+    let changed = false;
+    const newTasks = { daily: [...tasks.daily], main: [...tasks.main] };
+    const newCompletedTasks = [...completedTasks];
+
+    (['daily', 'main'] as const).forEach(category => {
+        const tasksToKeep: Task[] = [];
+        newTasks[category].forEach(task => {
+            if (task.deadline && !task.completedAt && now > new Date(task.deadline)) {
+                changed = true;
+                const penalty = -Math.round(task.xp / 2);
+                handleXpChange(penalty, task.attribute);
+
+                const failedTask: Task = {
+                    ...task,
+                    completedAt: now.toISOString(),
+                    levelAtCompletion: userLevelInfo.level,
+                    isFailure: true,
+                    xp: penalty
+                };
+                newCompletedTasks.unshift(failedTask);
+
+                toast({
+                    title: "Quest Failed!",
+                    description: `You failed "${task.title}" and lost ${-penalty} XP.`,
+                    variant: "destructive",
+                });
+            } else {
+                tasksToKeep.push(task);
+            }
+        });
+        newTasks[category] = tasksToKeep;
+    });
+
+    if (changed) {
+        setTasks(newTasks);
+        setCompletedTasks(newCompletedTasks);
+    }
+  }, [tasks, completedTasks, handleXpChange, userLevelInfo.level, toast]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const intervalId = setInterval(checkOverdueTasks, 60000); // Check every minute
+    return () => clearInterval(intervalId);
+  }, [isMounted, checkOverdueTasks]);
 
   const handleStartTask = (taskId: string, category: 'daily' | 'main') => {
     setTasks(prev => {
@@ -177,26 +248,7 @@ export default function LevelUpApp() {
     const isOverdue = task.deadline && new Date() > new Date(task.deadline);
     const xpGained = isOverdue ? -task.xp : task.xp;
 
-    const newTotalXp = totalXp + xpGained;
-
-    const oldLevel = userLevelInfo.level;
-    const newLevel = calculateLevelInfo(newTotalXp).level;
-
-    if (newLevel > oldLevel) {
-      setLevelUpInfo({ oldLevel, newLevel, dialogOpen: true });
-    } else if (newLevel < oldLevel) {
-      toast({
-          title: "Level Down!",
-          description: "You've lost a level. Keep trying!",
-          variant: "destructive"
-      });
-    }
-
-    setTotalXp(newTotalXp);
-    setAttributeXp(prev => ({
-      ...prev,
-      [task.attribute]: prev[task.attribute] + xpGained
-    }));
+    handleXpChange(xpGained, task.attribute);
     
     const newTasks = { ...tasks };
     newTasks[category] = newTasks[category].filter(t => t.id !== taskId);
@@ -205,7 +257,8 @@ export default function LevelUpApp() {
     const completedTask: Task = {
         ...task, 
         completedAt: new Date().toISOString(),
-        levelAtCompletion: userLevelInfo.level
+        levelAtCompletion: userLevelInfo.level,
+        xp: xpGained // Store the actual XP gained/lost
     };
 
     setCompletedTasks(prev => [completedTask, ...prev]);
@@ -503,10 +556,13 @@ export default function LevelUpApp() {
                                         <div>
                                             <p className="font-medium">{task.title}</p>
                                             <p className="text-sm text-muted-foreground">
-                                                Completed: {format(new Date(task.completedAt!), "PPp")}
+                                                {task.isFailure ? 'Failed' : 'Completed'}: {format(new Date(task.completedAt!), "PPp")}
                                             </p>
                                         </div>
-                                        <Badge variant="outline">{task.xp} XP</Badge>
+                                        <Badge variant={task.xp > 0 ? "outline" : "destructive"} className="flex items-center gap-1">
+                                          {task.xp > 0 ? <PlusCircle className="h-3 w-3" /> : <MinusCircle className="h-3 w-3" />}
+                                          {Math.abs(task.xp)} XP
+                                        </Badge>
                                     </div>
                                      <p className="text-xs text-muted-foreground mt-1">
                                         Level at completion: {task.levelAtCompletion}
