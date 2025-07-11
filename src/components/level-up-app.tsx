@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LevelUpDialog } from './level-up-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { StatsDisplay } from './stats-display';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 
 
 export default function LevelUpApp() {
@@ -40,6 +41,8 @@ export default function LevelUpApp() {
   const [newTaskCategory, setNewTaskCategory] = useState<'daily' | 'main'>('main');
   const [suggestion, setSuggestion] = useState<{ value: number; reasoning: string } | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
+
 
   const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 1, newLevel: 1, dialogOpen: false });
 
@@ -156,6 +159,7 @@ export default function LevelUpApp() {
     setNewTaskDescription('');
     setNewTaskXp('');
     setSuggestion(null);
+    setAddQuestDialogOpen(false);
   };
   
   const handleSuggestXp = async () => {
@@ -236,65 +240,7 @@ export default function LevelUpApp() {
                 </div>
             </TabsContent>
 
-            <TabsContent value="quests" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add New Quest</CardTitle>
-                  <CardDescription>What challenge will you conquer next?</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleAddTask} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Quest Title</Label>
-                      <Input id="title" placeholder="e.g. Master the art of bread making" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} required />
-                    </div>
-                     <div className="space-y-2">
-                      <Label htmlFor="description">Description (Optional)</Label>
-                      <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                      <div className="space-y-2">
-                        <Label>Category</Label>
-                         <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="daily" id="daily" />
-                            <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="main" id="main" />
-                            <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-
-                       <div className="space-y-2">
-                        <Label htmlFor="xp">Experience Points (XP)</Label>
-                        <div className="flex gap-2">
-                          <Input id="xp" type="number" placeholder="e.g. 50" value={newTaskXp} onChange={(e) => setNewTaskXp(e.target.value)} required />
-                          <Popover>
-                            <PopoverTrigger asChild>
-                               <Button type="button" variant="outline" onClick={handleSuggestXp} disabled={isSuggesting}>
-                                <Sparkles className={`mr-2 h-4 w-4 ${isSuggesting ? 'animate-spin' : ''}`} /> Suggest
-                               </Button>
-                            </PopoverTrigger>
-                            {suggestion && (
-                                <PopoverContent>
-                                    <h4 className="font-medium">AI Suggestion</h4>
-                                    <p className="text-sm text-muted-foreground">{suggestion.reasoning}</p>
-                                </PopoverContent>
-                            )}
-                          </Popover>
-                        </div>
-                      </div>
-                    </div>
-                    <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <Separator className="my-8" />
-
+            <TabsContent value="quests" className="mt-6 relative">
               <div className="space-y-6">
                 <div>
                   <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><Flame className="mr-2 h-6 w-6 text-orange-500" /> Daily Quests</h3>
@@ -317,6 +263,68 @@ export default function LevelUpApp() {
                   </div>
                 </div>
               </div>
+              
+              <Dialog open={isAddQuestDialogOpen} onOpenChange={setAddQuestDialogOpen}>
+                <DialogTrigger asChild>
+                   <Button className="fixed bottom-10 right-10 h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg transition-transform hover:scale-110">
+                      <Plus className="h-8 w-8" />
+                   </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New Quest</DialogTitle>
+                        <DialogDescription>What challenge will you conquer next?</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddTask} className="space-y-6 pt-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="title">Quest Title</Label>
+                            <Input id="title" placeholder="e.g. Master the art of bread making" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description (Optional)</Label>
+                            <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <div className="space-y-2">
+                            <Label>Category</Label>
+                                <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
+                                <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="daily" id="daily" />
+                                <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="main" id="main" />
+                                <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
+                                </div>
+                            </RadioGroup>
+                            </div>
+
+                            <div className="space-y-2">
+                            <Label htmlFor="xp">Experience Points (XP)</Label>
+                            <div className="flex gap-2">
+                                <Input id="xp" type="number" placeholder="e.g. 50" value={newTaskXp} onChange={(e) => setNewTaskXp(e.target.value)} required />
+                                <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button type="button" variant="outline" onClick={handleSuggestXp} disabled={isSuggesting}>
+                                    <Sparkles className={`mr-2 h-4 w-4 ${isSuggesting ? 'animate-spin' : ''}`} /> Suggest
+                                    </Button>
+                                </PopoverTrigger>
+                                {suggestion && (
+                                    <PopoverContent>
+                                        <h4 className="font-medium">AI Suggestion</h4>
+                                        <p className="text-sm text-muted-foreground">{suggestion.reasoning}</p>
+                                    </PopoverContent>
+                                )}
+                                </Popover>
+                            </div>
+                            </div>
+                        </div>
+                        <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
+                    </form>
+                </DialogContent>
+              </Dialog>
+
             </TabsContent>
           </Tabs>
         </div>
