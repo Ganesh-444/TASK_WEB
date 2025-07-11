@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock
 } from 'lucide-react';
+import { format } from "date-fns";
 
 import type { Task, QuestTemplate, Attribute } from '@/types';
 import { XP_PER_LEVEL, calculateLevelInfo } from '@/lib/xp-utils';
@@ -29,6 +30,8 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { StatsDisplay } from './stats-display';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from './ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/dropdown-menu';
+import { Calendar } from './ui/calendar';
+import { cn } from '@/lib/utils';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -59,6 +62,7 @@ export default function LevelUpApp() {
   const [newTaskXp, setNewTaskXp] = useState<number | string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<'daily' | 'main'>('main');
   const [newTaskAttribute, setNewTaskAttribute] = useState<Attribute>('skills');
+  const [newTaskDeadline, setNewTaskDeadline] = useState<Date | undefined>();
   const [suggestion, setSuggestion] = useState<{ value: number; reasoning: string } | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
@@ -138,19 +142,29 @@ export default function LevelUpApp() {
     if (taskIndex === -1) return;
 
     const task = tasks[category][taskIndex];
-    const newTotalXp = totalXp + task.xp;
+    
+    const isOverdue = task.deadline && new Date() > new Date(task.deadline);
+    const xpGained = isOverdue ? -task.xp : task.xp;
+
+    const newTotalXp = totalXp + xpGained;
 
     const oldLevel = userLevelInfo.level;
     const newLevel = calculateLevelInfo(newTotalXp).level;
 
     if (newLevel > oldLevel) {
       setLevelUpInfo({ oldLevel, newLevel, dialogOpen: true });
+    } else if (newLevel < oldLevel) {
+      toast({
+          title: "Level Down!",
+          description: "You've lost a level. Keep trying!",
+          variant: "destructive"
+      });
     }
 
     setTotalXp(newTotalXp);
     setAttributeXp(prev => ({
       ...prev,
-      [task.attribute]: prev[task.attribute] + task.xp
+      [task.attribute]: prev[task.attribute] + xpGained
     }));
     
     const newTasks = { ...tasks };
@@ -159,10 +173,18 @@ export default function LevelUpApp() {
 
     setCompletedTasks(prev => [{...task, completedAt: new Date().toISOString() }, ...prev]);
     
-    toast({
-      title: "Quest Complete!",
-      description: `You earned ${task.xp} XP!`,
-    });
+    if (isOverdue) {
+        toast({
+            title: "Quest Overdue!",
+            description: `You lost ${task.xp} XP.`,
+            variant: "destructive",
+        });
+    } else {
+        toast({
+            title: "Quest Complete!",
+            description: `You earned ${task.xp} XP!`,
+        });
+    }
   };
 
   const handleDeleteTask = (taskId: string, category: 'daily' | 'main') => {
@@ -183,6 +205,7 @@ export default function LevelUpApp() {
     setNewTaskDescription('');
     setNewTaskCount('');
     setNewTaskUnit('none');
+    setNewTaskDeadline(undefined);
   };
 
   const handleAddTask = (e: FormEvent) => {
@@ -203,6 +226,7 @@ export default function LevelUpApp() {
       xp: xpValue,
       category: newTaskCategory,
       attribute: newTaskAttribute,
+      deadline: newTaskDeadline?.toISOString(),
       ...(newTaskAttribute === 'str'
         ? { count: Number(newTaskCount) || undefined, unit: newTaskUnit !== 'none' ? newTaskUnit : undefined }
         : { description: newTaskDescription }),
@@ -215,6 +239,7 @@ export default function LevelUpApp() {
     setNewTaskXp('');
     setNewTaskCount('');
     setNewTaskUnit('none');
+    setNewTaskDeadline(undefined);
     setSuggestion(null);
     setAddQuestDialogOpen(false);
   };
@@ -280,6 +305,8 @@ export default function LevelUpApp() {
         }
         return task.description;
     }, [task]);
+    
+    const isOverdue = task.deadline && new Date() > new Date(task.deadline);
 
     return (
     <motion.div
@@ -293,6 +320,12 @@ export default function LevelUpApp() {
       <div className="flex-1">
         <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
         {taskDetail && <p className="text-sm text-muted-foreground">{taskDetail}</p>}
+        {task.deadline && (
+            <div className={cn("text-sm flex items-center gap-1 mt-1", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                <Clock className="h-3 w-3" />
+                <span>Due: {format(new Date(task.deadline), "PP")}</span>
+            </div>
+        )}
       </div>
       <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
       <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={onDelete}>
@@ -541,20 +574,48 @@ export default function LevelUpApp() {
                                 </div>
                                 </div>
                             </div>
-
-                             <div className="space-y-2">
-                                <Label>Category</Label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                <div className="space-y-2">
+                                    <Label>Category</Label>
                                     <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
-                                    <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="daily" id="daily" />
-                                    <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="main" id="main" />
-                                    <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
-                                    </div>
-                                </RadioGroup>
+                                        <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="daily" id="daily" />
+                                        <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="main" id="main" />
+                                        <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="deadline">Deadline (Optional)</Label>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                          "w-full justify-start text-left font-normal",
+                                          !newTaskDeadline && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {newTaskDeadline ? format(newTaskDeadline, "PPP") : <span>Pick a date</span>}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={newTaskDeadline}
+                                        onSelect={setNewTaskDeadline}
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
                             </div>
+
 
                             <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
                         </form>

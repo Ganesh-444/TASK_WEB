@@ -10,6 +10,7 @@ export type Task = {
   category: 'daily' | 'main';
   attribute: Attribute;
   completedAt?: string;
+  deadline?: string;
 };
 
 export type QuestTemplate = {
