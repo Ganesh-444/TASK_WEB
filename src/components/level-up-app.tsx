@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History
 } from 'lucide-react';
 import { format } from "date-fns";
 
@@ -32,6 +32,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/dropdown-menu';
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -71,6 +72,7 @@ export default function LevelUpApp() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
   const [isManageTemplatesOpen, setManageTemplatesOpen] = useState(false);
+  const [isHistorySheetOpen, setHistorySheetOpen] = useState(false);
 
   const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 0, newLevel: 0, dialogOpen: false });
 
@@ -200,7 +202,13 @@ export default function LevelUpApp() {
     newTasks[category] = newTasks[category].filter(t => t.id !== taskId);
     setTasks(newTasks);
 
-    setCompletedTasks(prev => [{...task, completedAt: new Date().toISOString() }, ...prev]);
+    const completedTask: Task = {
+        ...task, 
+        completedAt: new Date().toISOString(),
+        levelAtCompletion: userLevelInfo.level
+    };
+
+    setCompletedTasks(prev => [completedTask, ...prev]);
     
     if (isOverdue) {
         toast({
@@ -473,6 +481,53 @@ export default function LevelUpApp() {
       </DialogContent>
     </Dialog>
   );
+  
+  const HistorySheet = () => (
+    <Sheet open={isHistorySheetOpen} onOpenChange={setHistorySheetOpen}>
+        <SheetContent className="w-full sm:max-w-md">
+            <Tabs defaultValue="history">
+                <SheetHeader className="mb-4">
+                    <SheetTitle>
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="history"><History className="mr-2 h-4 w-4" />History</TabsTrigger>
+                            <TabsTrigger value="rules"><ScrollText className="mr-2 h-4 w-4" />Rules</TabsTrigger>
+                        </TabsList>
+                    </SheetTitle>
+                </SheetHeader>
+                <TabsContent value="history">
+                    <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
+                        {completedTasks.length > 0 ? (
+                            completedTasks.map(task => (
+                                <div key={task.id} className="p-3 rounded-lg bg-secondary/30 border border-primary/20">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-medium">{task.title}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Completed: {format(new Date(task.completedAt!), "PPp")}
+                                            </p>
+                                        </div>
+                                        <Badge variant="outline">{task.xp} XP</Badge>
+                                    </div>
+                                     <p className="text-xs text-muted-foreground mt-1">
+                                        Level at completion: {task.levelAtCompletion}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-muted-foreground text-center py-8">No quests completed yet.</p>
+                        )}
+                    </div>
+                </TabsContent>
+                <TabsContent value="rules">
+                    <div className="p-4 rounded-lg bg-secondary/30 border border-primary/20">
+                        <h3 className="font-bold text-lg mb-2">Game Rules</h3>
+                        <p className="text-muted-foreground">Rules will be added here soon!</p>
+                    </div>
+                </TabsContent>
+            </Tabs>
+        </SheetContent>
+    </Sheet>
+  )
 
   return (
     <>
@@ -482,6 +537,8 @@ export default function LevelUpApp() {
         level={levelUpInfo.newLevel}
       />
       <ManageTemplatesDialog />
+      <HistorySheet />
+
       <div className="min-h-screen bg-background text-foreground font-body">
         <div className="container mx-auto p-4 md:p-8 max-w-5xl">
 
@@ -492,7 +549,10 @@ export default function LevelUpApp() {
             </TabsList>
 
             <TabsContent value="status">
-                <div className="hud-border">
+                <div className="hud-border relative">
+                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-primary/80 hover:text-primary hover:bg-primary/10" onClick={() => setHistorySheetOpen(true)}>
+                        <Menu />
+                    </Button>
                     <div className="p-4 md:p-6 space-y-6">
                         <div className="text-center py-2 border-b-2 border-t-2 border-primary/30">
                             <h2 className="text-2xl font-bold tracking-widest text-accent">STATUS</h2>
