@@ -53,6 +53,8 @@ export default function LevelUpApp() {
   
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskCount, setNewTaskCount] = useState<number | string>('');
+  const [newTaskUnit, setNewTaskUnit] = useState('none');
   const [newTaskXp, setNewTaskXp] = useState<number | string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<'daily' | 'main'>('main');
   const [newTaskAttribute, setNewTaskAttribute] = useState<Attribute>('skills');
@@ -177,6 +179,9 @@ export default function LevelUpApp() {
     setNewTaskTitle(template.title);
     setNewTaskXp(template.xp);
     setNewTaskAttribute(template.attribute);
+    setNewTaskDescription('');
+    setNewTaskCount('');
+    setNewTaskUnit('none');
   };
 
   const handleAddTask = (e: FormEvent) => {
@@ -194,10 +199,12 @@ export default function LevelUpApp() {
     const newTask: Task = {
       id: Date.now().toString(),
       title: newTaskTitle,
-      description: newTaskDescription,
       xp: xpValue,
       category: newTaskCategory,
       attribute: newTaskAttribute,
+      ...(newTaskAttribute === 'str'
+        ? { count: Number(newTaskCount) || undefined, unit: newTaskUnit !== 'none' ? newTaskUnit : undefined }
+        : { description: newTaskDescription }),
     };
     
     setTasks(prev => ({ ...prev, [newTaskCategory]: [...prev[newTaskCategory], newTask]}));
@@ -205,6 +212,8 @@ export default function LevelUpApp() {
     setNewTaskTitle('');
     setNewTaskDescription('');
     setNewTaskXp('');
+    setNewTaskCount('');
+    setNewTaskUnit('none');
     setSuggestion(null);
     setAddQuestDialogOpen(false);
   };
@@ -264,6 +273,13 @@ export default function LevelUpApp() {
         }
     }, [task.attribute]);
 
+    const taskDetail = useMemo(() => {
+        if (task.attribute === 'str' && task.count) {
+            return `${task.count} ${task.unit && task.unit !== 'none' ? task.unit : ''}`;
+        }
+        return task.description;
+    }, [task]);
+
     return (
     <motion.div
       layout
@@ -275,7 +291,7 @@ export default function LevelUpApp() {
       <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} />
       <div className="flex-1">
         <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
-        {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
+        {taskDetail && <p className="text-sm text-muted-foreground">{taskDetail}</p>}
       </div>
       <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
       <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={onDelete}>
@@ -450,10 +466,37 @@ export default function LevelUpApp() {
                                 <Label htmlFor="title">Quest Title</Label>
                                 <Input id="title" placeholder="e.g. Master the art of bread making" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} required />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Description (Optional)</Label>
-                                <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
-                            </div>
+
+                            {newTaskAttribute === 'str' ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="count">Count</Label>
+                                        <Input id="count" type="number" placeholder="e.g. 10" value={newTaskCount} onChange={(e) => setNewTaskCount(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="unit">Unit</Label>
+                                        <Select value={newTaskUnit} onValueChange={setNewTaskUnit}>
+                                            <SelectTrigger id="unit">
+                                                <SelectValue placeholder="Select unit" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">None</SelectItem>
+                                                <SelectItem value="km">Kilometers</SelectItem>
+                                                <SelectItem value="miles">Miles</SelectItem>
+                                                <SelectItem value="reps">Reps</SelectItem>
+                                                <SelectItem value="sets">Sets</SelectItem>
+                                                <SelectItem value="minutes">Minutes</SelectItem>
+                                                <SelectItem value="hours">Hours</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">Description (Optional)</Label>
+                                    <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
+                                </div>
+                            )}
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                                  <div className="space-y-2">

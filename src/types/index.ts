@@ -4,6 +4,8 @@ export type Task = {
   id: string;
   title: string;
   description?: string;
+  count?: number;
+  unit?: string;
   xp: number;
   category: 'daily' | 'main';
   attribute: Attribute;
