@@ -417,7 +417,7 @@ export default function LevelUpApp() {
                       <Plus className="h-8 w-8" />
                    </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                     <DialogHeader>
                         <DialogTitle className="flex items-center justify-between">
                           <span className="flex items-center gap-2">
@@ -432,80 +432,82 @@ export default function LevelUpApp() {
                         <DialogDescription>What challenge will you conquer next?</DialogDescription>
                     </DialogHeader>
                     
-                    <div className="space-y-2">
-                        <Label>Quest Templates</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {questTemplates.map(template => (
-                                <Button key={template.id} variant="outline" size="sm" onClick={() => handleApplyTemplate(template)}>
-                                    {template.title}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                    <Separator />
-
-                    <form onSubmit={handleAddTask} className="space-y-6 pt-4">
+                    <div className="overflow-y-auto pr-4 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="title">Quest Title</Label>
-                            <Input id="title" placeholder="e.g. Master the art of bread making" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Description (Optional)</Label>
-                            <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                             <div className="space-y-2">
-                                <Label htmlFor="attribute">Attribute</Label>
-                                <Select value={newTaskAttribute} onValueChange={(v: Attribute) => setNewTaskAttribute(v)}>
-                                    <SelectTrigger id="attribute">
-                                        <SelectValue placeholder="Select attribute" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="str"><span className="flex items-center gap-2"><Dumbbell className="h-4 w-4" /> Strength</span></SelectItem>
-                                        <SelectItem value="int"><span className="flex items-center gap-2"><Brain className="h-4 w-4" /> Intelligence</span></SelectItem>
-                                        <SelectItem value="skills"><span className="flex items-center gap-2"><Swords className="h-4 w-4" /> Skills</span></SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                            <Label htmlFor="xp">Experience Points (XP)</Label>
-                            <div className="flex gap-2">
-                                <Input id="xp" type="number" placeholder="e.g. 50" value={newTaskXp} onChange={(e) => setNewTaskXp(e.target.value)} required />
-                                <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button type="button" variant="outline" onClick={handleSuggestXp} disabled={isSuggesting}>
-                                    <Sparkles className={`mr-2 h-4 w-4 ${isSuggesting ? 'animate-spin' : ''}`} /> Suggest
+                            <Label>Quest Templates</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {questTemplates.map(template => (
+                                    <Button key={template.id} variant="outline" size="sm" onClick={() => handleApplyTemplate(template)}>
+                                        {template.title}
                                     </Button>
-                                </PopoverTrigger>
-                                {suggestion && (
-                                    <PopoverContent>
-                                        <h4 className="font-medium">AI Suggestion</h4>
-                                        <p className="text-sm text-muted-foreground">{suggestion.reasoning}</p>
-                                    </PopoverContent>
-                                )}
-                                </Popover>
-                            </div>
+                                ))}
                             </div>
                         </div>
+                        <Separator />
 
-                         <div className="space-y-2">
-                            <Label>Category</Label>
-                                <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
-                                <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="daily" id="daily" />
-                                <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
+                        <form onSubmit={handleAddTask} className="space-y-6 pt-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="title">Quest Title</Label>
+                                <Input id="title" placeholder="e.g. Master the art of bread making" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="description">Description (Optional)</Label>
+                                <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                 <div className="space-y-2">
+                                    <Label htmlFor="attribute">Attribute</Label>
+                                    <Select value={newTaskAttribute} onValueChange={(v: Attribute) => setNewTaskAttribute(v)}>
+                                        <SelectTrigger id="attribute">
+                                            <SelectValue placeholder="Select attribute" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="str"><span className="flex items-center gap-2"><Dumbbell className="h-4 w-4" /> Strength</span></SelectItem>
+                                            <SelectItem value="int"><span className="flex items-center gap-2"><Brain className="h-4 w-4" /> Intelligence</span></SelectItem>
+                                            <SelectItem value="skills"><span className="flex items-center gap-2"><Swords className="h-4 w-4" /> Skills</span></SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="main" id="main" />
-                                <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
-                                </div>
-                            </RadioGroup>
-                        </div>
 
-                        <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
-                    </form>
+                                <div className="space-y-2">
+                                <Label htmlFor="xp">Experience Points (XP)</Label>
+                                <div className="flex gap-2">
+                                    <Input id="xp" type="number" placeholder="e.g. 50" value={newTaskXp} onChange={(e) => setNewTaskXp(e.target.value)} required />
+                                    <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button type="button" variant="outline" onClick={handleSuggestXp} disabled={isSuggesting}>
+                                        <Sparkles className={`mr-2 h-4 w-4 ${isSuggesting ? 'animate-spin' : ''}`} /> Suggest
+                                        </Button>
+                                    </PopoverTrigger>
+                                    {suggestion && (
+                                        <PopoverContent>
+                                            <h4 className="font-medium">AI Suggestion</h4>
+                                            <p className="text-sm text-muted-foreground">{suggestion.reasoning}</p>
+                                        </PopoverContent>
+                                    )}
+                                    </Popover>
+                                </div>
+                                </div>
+                            </div>
+
+                             <div className="space-y-2">
+                                <Label>Category</Label>
+                                    <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
+                                    <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="daily" id="daily" />
+                                    <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="main" id="main" />
+                                    <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+
+                            <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
+                        </form>
+                    </div>
                 </DialogContent>
               </Dialog>
 
