@@ -11,6 +11,7 @@ export type Task = {
   attribute: Attribute;
   completedAt?: string;
   deadline?: string;
+  startedAt?: string;
 };
 
 export type QuestTemplate = {

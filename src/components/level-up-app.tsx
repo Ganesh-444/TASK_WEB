@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play
 } from 'lucide-react';
 import { format } from "date-fns";
 
@@ -155,6 +155,16 @@ export default function LevelUpApp() {
 
 
   const userLevelInfo = useMemo(() => calculateLevelInfo(totalXp), [totalXp]);
+
+  const handleStartTask = (taskId: string, category: 'daily' | 'main') => {
+    setTasks(prev => {
+        const newTasks = { ...prev };
+        newTasks[category] = newTasks[category].map(t => 
+            t.id === taskId ? { ...t, startedAt: new Date().toISOString() } : t
+        );
+        return newTasks;
+    });
+  };
 
   const handleCompleteTask = (taskId: string, category: 'daily' | 'main') => {
     const taskIndex = tasks[category].findIndex(t => t.id === taskId);
@@ -309,7 +319,35 @@ export default function LevelUpApp() {
     toast({ title: 'Template Deleted', variant: 'destructive' });
   };
 
-  const TaskItem = ({ task, onComplete, onDelete }: {task: Task, onComplete: () => void, onDelete: () => void}) => {
+  const TaskItem = ({ task, onComplete, onDelete, onStart }: {task: Task, onComplete: () => void, onDelete: () => void, onStart: () => void}) => {
+    const [remainingTime, setRemainingTime] = useState('');
+
+    useEffect(() => {
+        if (!task.startedAt || !task.deadline) return;
+
+        const interval = setInterval(() => {
+            const now = new Date();
+            const deadlineDate = new Date(task.deadline!);
+            const diff = deadlineDate.getTime() - now.getTime();
+
+            if (diff <= 0) {
+                setRemainingTime('00:00:00:00');
+                clearInterval(interval);
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            setRemainingTime(
+                `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+            );
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [task.startedAt, task.deadline]);
     
     const attributeIcon = useMemo(() => {
         switch(task.attribute) {
@@ -338,13 +376,23 @@ export default function LevelUpApp() {
       className="flex items-center space-x-4 p-4 rounded-lg bg-card/50 hover:bg-secondary/20 transition-colors duration-200 border border-primary/20"
     >
       <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} />
-      <div className="flex-1">
+      <div className="flex-1 space-y-1">
         <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
         {taskDetail && <p className="text-sm text-muted-foreground">{taskDetail}</p>}
         {task.deadline && (
-            <div className={cn("text-sm flex items-center gap-1 mt-1", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+            <div className={cn("text-sm flex items-center gap-2 mt-1", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                 <Clock className="h-3 w-3" />
-                <span>Due: {format(new Date(task.deadline), "PPp")}</span>
+                {!task.startedAt ? (
+                    <>
+                        <span>Due: {format(new Date(task.deadline), "PPp")}</span>
+                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={onStart}>
+                            <Play className="h-3 w-3 mr-1" />
+                            Start
+                        </Button>
+                    </>
+                ) : (
+                    <span className="font-mono text-base">{remainingTime || '...'}</span>
+                )}
             </div>
         )}
       </div>
@@ -465,7 +513,7 @@ export default function LevelUpApp() {
                   <div className="space-y-2">
                     <AnimatePresence>
                       {tasks.daily.length > 0 ? tasks.daily.map(task => (
-                        <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')}/>
+                        <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} />
                       )) : <p className="text-muted-foreground p-4 text-center">No daily quests for today. Add one!</p>}
                     </AnimatePresence>
                   </div>
@@ -475,7 +523,7 @@ export default function LevelUpApp() {
                   <div className="space-y-2">
                     <AnimatePresence>
                       {tasks.main.length > 0 ? tasks.main.map(task => (
-                        <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} />
+                        <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')}/>
                       )) : <p className="text-muted-foreground p-4 text-center">Your adventure awaits. Add a main quest!</p>}
                      </AnimatePresence>
                   </div>
