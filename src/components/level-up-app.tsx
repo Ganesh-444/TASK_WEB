@@ -607,7 +607,7 @@ export default function LevelUpApp() {
             <TabsContent value="status">
                 <div className="hud-border relative">
                     <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-primary/80 hover:text-primary hover:bg-primary/10" onClick={() => setHistorySheetOpen(true)}>
-                        <Menu className="h-8 w-8" />
+                        <Menu className="h-12 w-12" />
                     </Button>
                     <div className="p-4 md:p-6 space-y-6">
                         <div className="text-center py-2 border-b-2 border-t-2 border-primary/30">
