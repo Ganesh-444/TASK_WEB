@@ -9,7 +9,7 @@ import {
 import { format } from "date-fns";
 
 import type { Task, QuestTemplate, Attribute } from '@/types';
-import { XP_PER_LEVEL, calculateLevelInfo } from '@/lib/xp-utils';
+import { calculateLevelInfo } from '@/lib/xp-utils';
 import { getXpSuggestion } from '@/app/actions';
 
 import { Button } from '@/components/ui/button';
@@ -607,7 +607,7 @@ export default function LevelUpApp() {
             <TabsContent value="status">
                 <div className="hud-border relative">
                     <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-primary/80 hover:text-primary hover:bg-primary/10" onClick={() => setHistorySheetOpen(true)}>
-                        <Menu className="h-12 w-12" />
+                        <Menu className="h-24 w-24" />
                     </Button>
                     <div className="p-4 md:p-6 space-y-6">
                         <div className="text-center py-2 border-b-2 border-t-2 border-primary/30">
