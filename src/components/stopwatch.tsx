@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Square, Timer } from 'lucide-react';
+import { Play, Pause, Square, Timer, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export function Stopwatch() {
   const [time, setTime] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
   const [showStopwatch, setShowStopwatch] = useState(false);
+  const [isRotated, setIsRotated] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -46,11 +48,12 @@ export function Stopwatch() {
   };
 
   const formatTime = () => {
+    const hours = Math.floor((time / 3600000) % 24);
     const minutes = Math.floor((time / 60000) % 60);
     const seconds = Math.floor((time / 1000) % 60);
     const milliseconds = Math.floor((time / 10) % 100);
 
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
   };
 
   return (
@@ -59,33 +62,50 @@ export function Stopwatch() {
         variant="outline"
         size="icon"
         className="h-12 w-12 rounded-full shadow-lg"
-        onClick={() => setShowStopwatch(!showStopwatch)}
+        onClick={() => setShowStopwatch(true)}
       >
         <Timer className="h-6 w-6" />
       </Button>
       <AnimatePresence>
         {showStopwatch && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="hud-border p-4 w-64 rounded-lg bg-background/80 mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm"
           >
-            <div className="text-center">
-              <p className="text-4xl font-mono text-accent tracking-wider">{formatTime()}</p>
-              <div className="flex justify-center gap-2 mt-4">
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowStopwatch(false)}
+                className="absolute top-4 right-4 h-12 w-12 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/10"
+            >
+                <X className="h-8 w-8" />
+            </Button>
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsRotated(!isRotated)}
+                className="absolute top-4 left-4 h-12 w-12 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/10"
+            >
+                <RefreshCw className={cn("h-7 w-7 transition-transform", isRotated && "rotate-90")} />
+            </Button>
+            
+            <div className={cn("flex flex-col items-center justify-center gap-8 transition-transform", isRotated && "rotate-90")}>
+              <p className="text-6xl md:text-8xl lg:text-9xl font-mono text-accent tracking-widest select-none">{formatTime()}</p>
+              <div className="flex justify-center gap-4">
                 {!isActive ? (
-                  <Button variant="ghost" size="icon" onClick={handleStart}>
-                    <Play className="text-green-500" />
+                  <Button variant="ghost" size="icon" onClick={handleStart} className="h-20 w-20 rounded-full">
+                    <Play className="h-10 w-10 text-green-500" />
                   </Button>
                 ) : (
-                  <Button variant="ghost" size="icon" onClick={handlePauseResume}>
-                    {isPaused ? <Play className="text-green-500" /> : <Pause className="text-yellow-500" />}
+                  <Button variant="ghost" size="icon" onClick={handlePauseResume} className="h-20 w-20 rounded-full">
+                    {isPaused ? <Play className="h-10 w-10 text-green-500" /> : <Pause className="h-10 w-10 text-yellow-500" />}
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" onClick={handleReset} disabled={!isActive}>
-                  <Square className={isActive ? "text-red-500" : "text-muted-foreground"}/>
+                <Button variant="ghost" size="icon" onClick={handleReset} disabled={!isActive} className="h-20 w-20 rounded-full">
+                  <Square className={cn("h-10 w-10", isActive ? "text-red-500" : "text-muted-foreground")}/>
                 </Button>
               </div>
             </div>
