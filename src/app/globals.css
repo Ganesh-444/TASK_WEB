@@ -74,7 +74,12 @@
     @apply bg-background text-foreground;
   }
   .dark {
-     background-image: radial-gradient(circle at 50% 50%, hsl(262 88% 15% / 0.5), transparent);
+     background-color: hsl(240 10% 4%);
+     background-image:
+      radial-gradient(at 0% 0%, hsl(262 88% 15% / 0.4) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(262 88% 15% / 0.4) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsl(262 88% 15% / 0.4) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsl(262 88% 15% / 0.4) 0px, transparent 50%);
   }
 }
 
@@ -87,5 +92,37 @@
   }
   .dark .tabs-trigger[data-state=active] {
     @apply bg-primary/80 text-primary-foreground;
+  }
+  
+  .hud-border {
+    border: 2px solid hsl(var(--primary) / 0.4);
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.3), inset 0 0 10px hsl(var(--primary) / 0.5);
+    backdrop-filter: blur(5px);
+    background: hsl(var(--background) / 0.8);
+    position: relative;
+    padding: 1px;
+    border-radius: var(--radius);
+  }
+
+  .hud-border::before,
+  .hud-border::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: hsl(var(--accent));
+    border-style: solid;
+  }
+
+  .hud-border::before {
+    top: -2px;
+    left: -2px;
+    border-width: 2px 0 0 2px;
+  }
+
+  .hud-border::after {
+    bottom: -2px;
+    right: -2px;
+    border-width: 0 2px 2px 0;
   }
 }

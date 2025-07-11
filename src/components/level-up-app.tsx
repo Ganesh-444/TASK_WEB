@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond
 } from 'lucide-react';
 
 import type { Task } from '@/types';
@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from "@/hooks/use-toast";
 import { LevelUpDialog } from './level-up-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { StatsDisplay } from './stats-display';
 
 
 export default function LevelUpApp() {
@@ -43,6 +44,10 @@ export default function LevelUpApp() {
   const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 1, newLevel: 1, dialogOpen: false });
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    document.body.classList.add('dark');
+  }, []);
 
   useEffect(() => {
     const storedXp = localStorage.getItem('totalXp');
@@ -74,7 +79,6 @@ export default function LevelUpApp() {
     }
   }, [completedTasks, isMounted]);
   
-  // Reset daily tasks every day
   useEffect(() => {
     const lastReset = localStorage.getItem('lastDailyReset');
     const today = new Date().toISOString().split('T')[0];
@@ -172,14 +176,14 @@ export default function LevelUpApp() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
-      className="flex items-center space-x-4 p-4 rounded-lg bg-card hover:bg-secondary transition-colors duration-200"
+      className="flex items-center space-x-4 p-4 rounded-lg bg-card/50 hover:bg-secondary/20 transition-colors duration-200 border border-primary/20"
     >
       <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} />
       <div className="flex-1">
         <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer">{task.title}</label>
         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
       </div>
-      <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground">{task.xp} XP</Badge>
+      <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
       <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={onDelete}>
         <Trash2 className="h-4 w-4" />
       </Button>
@@ -194,28 +198,76 @@ export default function LevelUpApp() {
         level={levelUpInfo.newLevel}
       />
       <div className="min-h-screen bg-background text-foreground font-body">
-        <div className="container mx-auto p-4 md:p-8 max-w-4xl">
+        <div className="container mx-auto p-4 md:p-8 max-w-5xl">
 
-          <header className="text-center mb-8">
-            <h1 className="text-5xl font-bold font-headline text-primary">LevelUp List</h1>
-            <p className="text-muted-foreground mt-2">Gamify your life, one task at a time.</p>
-          </header>
-
-          <Card className="mb-8 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-lg">Level {userLevelInfo.level}</span>
-                <span className="text-sm text-muted-foreground">{userLevelInfo.xpInCurrentLevel} / {userLevelInfo.xpForNextLevel} XP</span>
-              </div>
-              <Progress value={userLevelInfo.progress} className="h-4" />
-            </CardContent>
-          </Card>
-
-          <Tabs defaultValue="quests" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue="status" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="status"><User className="mr-2 h-4 w-4" />Status</TabsTrigger>
               <TabsTrigger value="quests"><Swords className="mr-2 h-4 w-4" />Quests</TabsTrigger>
-              <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Profile</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="status">
+                <div className="hud-border">
+                    <div className="p-4 md:p-6 space-y-6">
+                        <div className="text-center py-2 border-b-2 border-t-2 border-primary/30">
+                            <h2 className="text-2xl font-bold tracking-widest text-accent">STATUS</h2>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="text-center md:text-left">
+                                <span className="text-8xl font-bold text-accent">{userLevelInfo.level}</span>
+                                <p className="text-2xl text-muted-foreground -mt-2">LEVEL</p>
+                            </div>
+                            <div className="text-center md:text-right space-y-1">
+                                <p className="text-lg"><span className="font-semibold text-muted-foreground">JOB: </span> <span className="text-primary-foreground">Life Conqueror</span></p>
+                                <p className="text-lg"><span className="font-semibold text-muted-foreground">TITLE: </span> <span className="text-primary-foreground">The One Who Overcame Inertia</span></p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="flex items-center gap-2 p-3 bg-black/30 rounded-md border border-primary/20">
+                                <Heart className="text-red-500 h-6 w-6" />
+                                <div className="w-full">
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>HP</span>
+                                    <span>{userLevelInfo.xpInCurrentLevel} / {userLevelInfo.xpForNextLevel}</span>
+                                  </div>
+                                  <Progress value={userLevelInfo.progress} className="h-2 [&>div]:bg-red-500"/>
+                                </div>
+                            </div>
+                             <div className="flex items-center gap-2 p-3 bg-black/30 rounded-md border border-primary/20">
+                                <Zap className="text-yellow-500 h-6 w-6" />
+                                <div className="w-full">
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>MP</span>
+                                    <span>{completedTasks.length * 10} / 1000</span>
+                                  </div>
+                                  <Progress value={(completedTasks.length * 10)/10} className="h-2 [&>div]:bg-yellow-500"/>
+                                </div>
+                            </div>
+                             <div className="flex items-center gap-2 p-3 bg-black/30 rounded-md border border-primary/20">
+                                <Sparkles className="text-cyan-400 h-6 w-6" />
+                                <div className="w-full">
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Fatigue</span>
+                                    <span>0</span>
+                                  </div>
+                                  <Progress value={0} className="h-2"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Separator className="my-4 bg-primary/30"/>
+
+                        <StatsDisplay level={userLevelInfo.level} />
+
+                        <div className="text-center p-4 bg-black/30 rounded-md border border-primary/20">
+                            <p className="text-muted-foreground">Available Ability Points</p>
+                            <p className="text-5xl font-bold text-accent">{userLevelInfo.level -1}</p>
+                        </div>
+                    </div>
+                </div>
+            </TabsContent>
 
             <TabsContent value="quests" className="mt-6">
               <Card>
@@ -297,45 +349,6 @@ export default function LevelUpApp() {
                      </AnimatePresence>
                   </div>
                 </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="profile" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Hero Profile</CardTitle>
-                  <CardDescription>An overview of your epic journey.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Current Level</span>
-                    <span className="font-bold text-primary text-lg">{userLevelInfo.level}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total XP Earned</span>
-                    <span className="font-bold text-primary text-lg">{userLevelInfo.totalXp}</span>
-                  </div>
-                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Quests Completed</span>
-                    <span className="font-bold text-primary text-lg">{completedTasks.length}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Separator className="my-8" />
-              <div>
-                <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><Trophy className="mr-2 h-6 w-6 text-yellow-500" /> Saga of Legends</h3>
-                 <div className="space-y-2">
-                    {completedTasks.length > 0 ? completedTasks.map(task => (
-                      <div key={task.id} className="flex items-center space-x-4 p-4 rounded-lg bg-card/80 opacity-70">
-                        <Check className="h-5 w-5 text-green-500" />
-                        <div className="flex-1">
-                          <p className="font-medium line-through">{task.title}</p>
-                          <p className="text-sm text-muted-foreground">Completed on {new Date(task.completedAt!).toLocaleDateString()}</p>
-                        </div>
-                        <Badge variant="outline">+{task.xp} XP</Badge>
-                      </div>
-                    )) : <p className="text-muted-foreground p-4 text-center">No quests completed yet. Go make history!</p>}
-                  </div>
               </div>
             </TabsContent>
           </Tabs>
