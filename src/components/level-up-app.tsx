@@ -217,9 +217,24 @@ export default function LevelUpApp() {
   };
 
   const handleDeleteTask = (taskId: string, category: 'daily' | 'main') => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastDeletionDate = localStorage.getItem('lastTaskDeletionDate');
+
+    if (lastDeletionDate === today) {
+      toast({
+        title: "Deletion Limit Reached",
+        description: "You can only delete one quest per day.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newTasks = { ...tasks };
     newTasks[category] = newTasks[category].filter(t => t.id !== taskId);
     setTasks(newTasks);
+
+    localStorage.setItem('lastTaskDeletionDate', today);
+
     toast({
       title: "Task Removed",
       variant: "destructive",
