@@ -1,16 +1,21 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Dumbbell, Brain, Swords, GraduationCap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Attribute } from '@/types';
 import { Progress } from './ui/progress';
 
-const StatItem = ({ icon, label, value, bonus, xp, xpForNextPoint }: { icon: React.ReactNode, label: string, value: number, bonus: number, xp: number, xpForNextPoint: number }) => (
+const StatItem = ({ icon, label, value, bonus, xp, xpForNextPoint }: { icon: React.ReactNode, label: string, value: number, bonus: number, xp: number, xpForNextPoint: number }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
     <motion.div 
-        className="flex flex-col gap-2 p-3 bg-black/30 rounded-md border border-primary/20"
-        whileHover={{ scale: 1.05, backgroundColor: 'hsl(var(--secondary)/0.3)'}}
-        transition={{ type: 'spring', stiffness: 300}}
+        layout
+        className="flex flex-col gap-2 p-3 bg-black/30 rounded-md border border-primary/20 cursor-pointer"
+        whileHover={{ scale: 1.02, backgroundColor: 'hsl(var(--secondary)/0.3)'}}
+        transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+        onClick={() => setIsOpen(!isOpen)}
     >
         <div className="flex items-center gap-4">
             <div className="text-accent">{icon}</div>
@@ -20,12 +25,22 @@ const StatItem = ({ icon, label, value, bonus, xp, xpForNextPoint }: { icon: Rea
                 {bonus > 0 && <span className="text-lg font-medium text-green-400">(+{bonus})</span>}
             </div>
         </div>
-        <div className="px-2">
-            <Progress value={(xp / xpForNextPoint) * 100} className="h-2" />
-            <p className="text-xs text-right text-muted-foreground mt-1">{xp} / {xpForNextPoint} XP</p>
-        </div>
+        <AnimatePresence>
+        {isOpen && (
+            <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="px-2 overflow-hidden"
+            >
+                <Progress value={(xp / xpForNextPoint) * 100} className="h-2" />
+                <p className="text-xs text-right text-muted-foreground mt-1">{xp} / {xpForNextPoint} XP</p>
+            </motion.div>
+        )}
+        </AnimatePresence>
     </motion.div>
-);
+)};
 
 export function StatsDisplay({ level, attributeXp }: { level: number, attributeXp: Record<Attribute, number> }) {
     const stats = useMemo(() => {
