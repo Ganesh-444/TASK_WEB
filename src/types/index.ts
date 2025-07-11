@@ -6,3 +6,9 @@ export type Task = {
   category: 'daily' | 'main';
   completedAt?: string;
 };
+
+export type QuestTemplate = {
+  id: string;
+  title: string;
+  xp: number;
+};

@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings
 } from 'lucide-react';
 
-import type { Task } from '@/types';
+import type { Task, QuestTemplate } from '@/types';
 import { XP_PER_LEVEL, calculateLevelInfo } from '@/lib/xp-utils';
 import { getXpSuggestion } from '@/app/actions';
 
@@ -26,15 +26,15 @@ import { useToast } from "@/hooks/use-toast";
 import { LevelUpDialog } from './level-up-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { StatsDisplay } from './stats-display';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from './ui/dialog';
 
-const questTemplates = [
-    { title: "Walk the dog", xp: 10 },
-    { title: "Go to the gym", xp: 50 },
-    { title: "Read a chapter of a book", xp: 20 },
-    { title: "Do the laundry", xp: 15 },
-    { title: "Prepare a healthy meal", xp: 25 },
-    { title: "Write a blog post", xp: 100 },
+const defaultQuestTemplates: QuestTemplate[] = [
+    { id: "1", title: "Walk the dog", xp: 10 },
+    { id: "2", title: "Go to the gym", xp: 50 },
+    { id: "3", title: "Read a chapter of a book", xp: 20 },
+    { id: "4", title: "Do the laundry", xp: 15 },
+    { id: "5", title: "Prepare a healthy meal", xp: 25 },
+    { id: "6", title: "Write a blog post", xp: 100 },
 ];
 
 export default function LevelUpApp() {
@@ -50,11 +50,14 @@ export default function LevelUpApp() {
   const [suggestion, setSuggestion] = useState<{ value: number; reasoning: string } | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
-
+  const [isManageTemplatesOpen, setManageTemplatesOpen] = useState(false);
 
   const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 1, newLevel: 1, dialogOpen: false });
 
   const { toast } = useToast();
+
+  const [questTemplates, setQuestTemplates] = useState<QuestTemplate[]>(defaultQuestTemplates);
+  const [editingTemplate, setEditingTemplate] = useState<QuestTemplate | null>(null);
 
   useEffect(() => {
     document.body.classList.add('dark');
@@ -64,10 +67,17 @@ export default function LevelUpApp() {
     const storedXp = localStorage.getItem('totalXp');
     const storedTasks = localStorage.getItem('tasks');
     const storedCompletedTasks = localStorage.getItem('completedTasks');
+    const storedQuestTemplates = localStorage.getItem('questTemplates');
 
     if (storedXp) setTotalXp(JSON.parse(storedXp));
     if (storedTasks) setTasks(JSON.parse(storedTasks));
     if (storedCompletedTasks) setCompletedTasks(JSON.parse(storedCompletedTasks));
+    if (storedQuestTemplates) {
+      setQuestTemplates(JSON.parse(storedQuestTemplates));
+    } else {
+      setQuestTemplates(defaultQuestTemplates);
+    }
+
 
     setIsMounted(true);
   }, []);
@@ -89,6 +99,12 @@ export default function LevelUpApp() {
       localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
     }
   }, [completedTasks, isMounted]);
+
+  useEffect(() => {
+    if (isMounted) {
+        localStorage.setItem('questTemplates', JSON.stringify(questTemplates));
+    }
+  }, [questTemplates, isMounted]);
   
   useEffect(() => {
     const lastReset = localStorage.getItem('lastDailyReset');
@@ -187,6 +203,38 @@ export default function LevelUpApp() {
     setIsSuggesting(false);
   }
 
+  const handleSaveTemplate = (e: FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const titleInput = form.elements.namedItem('title') as HTMLInputElement;
+    const xpInput = form.elements.namedItem('xp') as HTMLInputElement;
+    const title = titleInput.value;
+    const xp = Number(xpInput.value);
+
+    if (!title || isNaN(xp) || xp <= 0) {
+      toast({ title: 'Invalid template data', description: 'Please provide a valid title and positive XP value.', variant: 'destructive'});
+      return;
+    }
+
+    if (editingTemplate) {
+      // Edit existing
+      setQuestTemplates(templates => templates.map(t => t.id === editingTemplate.id ? { ...t, title, xp } : t));
+      toast({ title: 'Template Updated' });
+    } else {
+      // Add new
+      const newTemplate: QuestTemplate = { id: Date.now().toString(), title, xp };
+      setQuestTemplates(templates => [...templates, newTemplate]);
+      toast({ title: 'Template Added' });
+    }
+    setEditingTemplate(null);
+    form.reset();
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    setQuestTemplates(templates => templates.filter(t => t.id !== id));
+    toast({ title: 'Template Deleted', variant: 'destructive' });
+  };
+
   const TaskItem = ({ task, onComplete, onDelete }: {task: Task, onComplete: () => void, onDelete: () => void}) => (
     <motion.div
       layout
@@ -207,6 +255,45 @@ export default function LevelUpApp() {
     </motion.div>
   );
 
+  const ManageTemplatesDialog = () => (
+    <Dialog open={isManageTemplatesOpen} onOpenChange={setManageTemplatesOpen}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Manage Quest Templates</DialogTitle>
+          <DialogDescription>Add, edit, or delete your quest templates.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+          {questTemplates.map(template => (
+            <div key={template.id} className="flex items-center gap-2 p-2 rounded-md bg-secondary/20">
+              <span className="flex-1 font-medium">{template.title}</span>
+              <Badge variant="outline">{template.xp} XP</Badge>
+              <Button variant="ghost" size="icon" onClick={() => setEditingTemplate(template)}><Edit className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteTemplate(template.id)}><Trash2 className="h-4 w-4" /></Button>
+            </div>
+          ))}
+        </div>
+        <Separator />
+        <form onSubmit={handleSaveTemplate} className="space-y-4">
+          <h4 className="font-medium">{editingTemplate ? 'Edit Template' : 'Add New Template'}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="template-title">Title</Label>
+              <Input id="template-title" name="title" placeholder="Template title" defaultValue={editingTemplate?.title} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="template-xp">XP</Label>
+              <Input id="template-xp" name="xp" type="number" placeholder="XP Value" defaultValue={editingTemplate?.xp} required />
+            </div>
+          </div>
+          <DialogFooter>
+            {editingTemplate && <Button type="button" variant="ghost" onClick={() => setEditingTemplate(null)}>Cancel Edit</Button>}
+            <Button type="submit">{editingTemplate ? 'Save Changes' : 'Add Template'}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <>
       <LevelUpDialog
@@ -214,6 +301,7 @@ export default function LevelUpApp() {
         onOpenChange={(open) => setLevelUpInfo(prev => ({ ...prev, dialogOpen: open }))}
         level={levelUpInfo.newLevel}
       />
+      <ManageTemplatesDialog />
       <div className="min-h-screen bg-background text-foreground font-body">
         <div className="container mx-auto p-4 md:p-8 max-w-5xl">
 
@@ -285,9 +373,15 @@ export default function LevelUpApp() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Menu className="h-5 w-5" />
-                          Add New Quest
+                        <DialogTitle className="flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <Menu className="h-5 w-5" />
+                            Add New Quest
+                          </span>
+                          <Button variant="outline" size="sm" onClick={() => setManageTemplatesOpen(true)}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            Manage Templates
+                          </Button>
                         </DialogTitle>
                         <DialogDescription>What challenge will you conquer next?</DialogDescription>
                     </DialogHeader>
@@ -296,7 +390,7 @@ export default function LevelUpApp() {
                         <Label>Quest Templates</Label>
                         <div className="flex flex-wrap gap-2">
                             {questTemplates.map(template => (
-                                <Button key={template.title} variant="outline" size="sm" onClick={() => handleApplyTemplate(template)}>
+                                <Button key={template.id} variant="outline" size="sm" onClick={() => handleApplyTemplate(template)}>
                                     {template.title}
                                 </Button>
                             ))}
