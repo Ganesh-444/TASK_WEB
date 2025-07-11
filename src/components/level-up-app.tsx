@@ -33,6 +33,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
+import { Stopwatch } from './stopwatch';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -484,12 +485,12 @@ export default function LevelUpApp() {
         setManageTemplatesOpen(isOpen);
         if (!isOpen) setEditingTemplate(null);
     }}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Manage Quest Templates</DialogTitle>
           <DialogDescription>Add, edit, or delete your quest templates.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+        <div className="space-y-4 flex-1 overflow-y-auto pr-4">
           {questTemplates.map(template => (
             <div key={template.id} className="flex items-center gap-2 p-2 rounded-md bg-secondary/20">
               <span className="flex-1 font-medium">{template.title}</span>
@@ -665,176 +666,179 @@ export default function LevelUpApp() {
                 </div>
               </div>
               
-              <Dialog open={isAddQuestDialogOpen} onOpenChange={setAddQuestDialogOpen}>
-                <DialogTrigger asChild>
-                   <Button className="fixed bottom-10 right-10 h-16 w-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg transition-transform hover:scale-110">
-                      <Plus className="h-8 w-8" />
-                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center justify-between">
-                          <span className="flex items-center gap-2">
-                            <Menu className="h-5 w-5" />
-                            Add New Quest
-                          </span>
-                          <Button variant="outline" size="sm" onClick={() => setManageTemplatesOpen(true)}>
-                            <Settings className="mr-2 h-4 w-4" />
-                            Manage Templates
-                          </Button>
-                        </DialogTitle>
-                        <DialogDescription>What challenge will you conquer next?</DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="overflow-y-auto pr-4 space-y-4">
-                        <div className="space-y-2">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full">
-                                        Quest Templates
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                                    {questTemplates.map(template => (
-                                        <DropdownMenuItem key={template.id} onClick={() => handleApplyTemplate(template)}>
-                                            <span>{template.title}</span>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <Separator />
-
-                        <form onSubmit={handleAddTask} className="space-y-6 pt-4">
+              <div className="fixed bottom-10 right-10 z-50 flex flex-col items-center gap-4">
+                  <Stopwatch />
+                  <Dialog open={isAddQuestDialogOpen} onOpenChange={setAddQuestDialogOpen}>
+                    <DialogTrigger asChild>
+                       <Button className="h-16 w-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg transition-transform hover:scale-110">
+                          <Plus className="h-8 w-8" />
+                       </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center justify-between">
+                              <span className="flex items-center gap-2">
+                                <Menu className="h-5 w-5" />
+                                Add New Quest
+                              </span>
+                              <Button variant="outline" size="sm" onClick={() => { setAddQuestDialogOpen(false); setManageTemplatesOpen(true); }}>
+                                <Settings className="mr-2 h-4 w-4" />
+                                Manage Templates
+                              </Button>
+                            </DialogTitle>
+                            <DialogDescription>What challenge will you conquer next?</DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="flex-1 overflow-y-auto -mr-6 pr-6 space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="title">Quest Title</Label>
-                                <Input id="title" placeholder="e.g. Master the art of bread making" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} required />
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" className="w-full">
+                                            Quest Templates
+                                            <ChevronDown className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                                        {questTemplates.map(template => (
+                                            <DropdownMenuItem key={template.id} onClick={() => handleApplyTemplate(template)}>
+                                                <span>{template.title}</span>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
+                            <Separator />
 
-                            {newTaskAttribute === 'str' ? (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="count">Count</Label>
-                                        <Input id="count" type="number" placeholder="e.g. 10" value={newTaskCount} onChange={(e) => setNewTaskCount(e.target.value)} />
+                            <form onSubmit={handleAddTask} className="space-y-6 pt-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Quest Title</Label>
+                                    <Input id="title" placeholder="e.g. Master the art of bread making" value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} required />
+                                </div>
+
+                                {newTaskAttribute === 'str' ? (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="count">Count</Label>
+                                            <Input id="count" type="number" placeholder="e.g. 10" value={newTaskCount} onChange={(e) => setNewTaskCount(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="unit">Unit</Label>
+                                            <Select value={newTaskUnit} onValueChange={setNewTaskUnit}>
+                                                <SelectTrigger id="unit">
+                                                    <SelectValue placeholder="Select unit" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                    <SelectItem value="km">Kilometers</SelectItem>
+                                                    <SelectItem value="miles">Miles</SelectItem>
+                                                    <SelectItem value="reps">Reps</SelectItem>
+                                                    <SelectItem value="sets">Sets</SelectItem>
+                                                    <SelectItem value="minutes">Minutes</SelectItem>
+                                                    <SelectItem value="hours">Hours</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
+                                ) : (
                                     <div className="space-y-2">
-                                        <Label htmlFor="unit">Unit</Label>
-                                        <Select value={newTaskUnit} onValueChange={setNewTaskUnit}>
-                                            <SelectTrigger id="unit">
-                                                <SelectValue placeholder="Select unit" />
+                                        <Label htmlFor="description">Description (Optional)</Label>
+                                        <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
+                                    </div>
+                                )}
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                     <div className="space-y-2">
+                                        <Label htmlFor="attribute">Attribute</Label>
+                                        <Select value={newTaskAttribute} onValueChange={(v: Attribute) => setNewTaskAttribute(v)}>
+                                            <SelectTrigger id="attribute">
+                                                <SelectValue placeholder="Select attribute" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">None</SelectItem>
-                                                <SelectItem value="km">Kilometers</SelectItem>
-                                                <SelectItem value="miles">Miles</SelectItem>
-                                                <SelectItem value="reps">Reps</SelectItem>
-                                                <SelectItem value="sets">Sets</SelectItem>
-                                                <SelectItem value="minutes">Minutes</SelectItem>
-                                                <SelectItem value="hours">Hours</SelectItem>
+                                                <SelectItem value="str"><span className="flex items-center gap-2"><Dumbbell className="h-4 w-4" /> Strength</span></SelectItem>
+                                                <SelectItem value="int"><span className="flex items-center gap-2"><Brain className="h-4 w-4" /> Intelligence</span></SelectItem>
+                                                <SelectItem value="skills"><span className="flex items-center gap-2"><Swords className="h-4 w-4" /> Skills</span></SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Description (Optional)</Label>
-                                    <Textarea id="description" placeholder="Add more details about your quest..." value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} />
-                                </div>
-                            )}
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                                 <div className="space-y-2">
-                                    <Label htmlFor="attribute">Attribute</Label>
-                                    <Select value={newTaskAttribute} onValueChange={(v: Attribute) => setNewTaskAttribute(v)}>
-                                        <SelectTrigger id="attribute">
-                                            <SelectValue placeholder="Select attribute" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="str"><span className="flex items-center gap-2"><Dumbbell className="h-4 w-4" /> Strength</span></SelectItem>
-                                            <SelectItem value="int"><span className="flex items-center gap-2"><Brain className="h-4 w-4" /> Intelligence</span></SelectItem>
-                                            <SelectItem value="skills"><span className="flex items-center gap-2"><Swords className="h-4 w-4" /> Skills</span></SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
 
-                                <div className="space-y-2">
-                                <Label htmlFor="xp">Experience Points (XP)</Label>
-                                <div className="flex gap-2">
-                                    <Input id="xp" type="number" placeholder="e.g. 50" value={newTaskXp} onChange={(e) => setNewTaskXp(e.target.value)} required />
-                                    <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button type="button" variant="outline" onClick={handleSuggestXp} disabled={isSuggesting}>
-                                        <Sparkles className={`mr-2 h-4 w-4 ${isSuggesting ? 'animate-spin' : ''}`} /> Suggest
-                                        </Button>
-                                    </PopoverTrigger>
-                                    {suggestion && (
-                                        <PopoverContent>
-                                            <h4 className="font-medium">AI Suggestion</h4>
-                                            <p className="text-sm text-muted-foreground">{suggestion.reasoning}</p>
-                                        </PopoverContent>
-                                    )}
-                                    </Popover>
-                                </div>
-                                </div>
-                            </div>
-                            
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                                <div className="space-y-2">
-                                    <Label>Category</Label>
-                                    <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
-                                        <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="daily" id="daily" />
-                                        <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="main" id="main" />
-                                        <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
-                                        </div>
-                                    </RadioGroup>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="deadline">Deadline (Optional)</Label>
-                                  <div className="flex gap-2">
-                                    <Popover>
+                                    <div className="space-y-2">
+                                    <Label htmlFor="xp">Experience Points (XP)</Label>
+                                    <div className="flex gap-2">
+                                        <Input id="xp" type="number" placeholder="e.g. 50" value={newTaskXp} onChange={(e) => setNewTaskXp(e.target.value)} required />
+                                        <Popover>
                                         <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                            "w-full justify-start text-left font-normal",
-                                            !newTaskDate && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {newTaskDate ? format(newTaskDate, "PPP") : <span>Pick a date</span>}
-                                        </Button>
+                                            <Button type="button" variant="outline" onClick={handleSuggestXp} disabled={isSuggesting}>
+                                            <Sparkles className={`mr-2 h-4 w-4 ${isSuggesting ? 'animate-spin' : ''}`} /> Suggest
+                                            </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={newTaskDate}
-                                            onSelect={setNewTaskDate}
-                                            initialFocus
-                                        />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <Input
-                                        type="time"
-                                        value={newTaskTime}
-                                        onChange={(e) => setNewTaskTime(e.target.value)}
-                                        className="w-32"
-                                        disabled={!newTaskDate}
-                                    />
-                                  </div>
+                                        {suggestion && (
+                                            <PopoverContent>
+                                                <h4 className="font-medium">AI Suggestion</h4>
+                                                <p className="text-sm text-muted-foreground">{suggestion.reasoning}</p>
+                                            </PopoverContent>
+                                        )}
+                                        </Popover>
+                                    </div>
+                                    </div>
                                 </div>
-                            </div>
-
-
-                            <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
-                        </form>
-                    </div>
-                </DialogContent>
-              </Dialog>
+                                
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                    <div className="space-y-2">
+                                        <Label>Category</Label>
+                                        <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
+                                            <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="daily" id="daily" />
+                                            <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="main" id="main" />
+                                            <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
+                                            </div>
+                                        </RadioGroup>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="deadline">Deadline (Optional)</Label>
+                                      <div className="flex gap-2">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !newTaskDate && "text-muted-foreground"
+                                                )}
+                                            >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {newTaskDate ? format(newTaskDate, "PPP") : <span>Pick a date</span>}
+                                            </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                                mode="single"
+                                                selected={newTaskDate}
+                                                onSelect={setNewTaskDate}
+                                                initialFocus
+                                            />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <Input
+                                            type="time"
+                                            value={newTaskTime}
+                                            onChange={(e) => setNewTaskTime(e.target.value)}
+                                            className="w-32"
+                                            disabled={!newTaskDate}
+                                        />
+                                      </div>
+                                    </div>
+                                </div>
+                                <DialogFooter className="sticky bottom-0 bg-background pt-4 -mx-6 px-6 pb-0">
+                                  <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
+                                </DialogFooter>
+                            </form>
+                        </div>
+                    </DialogContent>
+                  </Dialog>
+              </div>
 
             </TabsContent>
           </Tabs>
