@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -5,6 +6,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Square, Timer, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+const TimeBlock = ({ value, label, color }: { value: string, label: string, color: string }) => (
+    <div className="flex flex-col items-center">
+        <div 
+            className={cn("w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center border-2", color)}
+            style={{boxShadow: `0 0 20px 1px ${color.replace('border-', 'hsl(var(--')).replace('-500', ')/0.3')}`}}
+        >
+            <span className="text-5xl md:text-6xl font-mono text-foreground tracking-widest select-none">{value}</span>
+        </div>
+        <span className="mt-2 text-sm md:text-base font-semibold text-muted-foreground uppercase tracking-widest">{label}</span>
+    </div>
+);
+
 
 export function Stopwatch() {
   const [time, setTime] = useState(0);
@@ -88,18 +102,6 @@ export function Stopwatch() {
   };
   
   const { hours, minutes, seconds } = formatTime();
-
-  const TimeBlock = ({ value, label, color }: { value: string, label: string, color: string }) => (
-    <div className="flex flex-col items-center">
-        <div 
-            className={cn("w-24 h-24 md:w-32 md:h-32 rounded-2xl flex items-center justify-center border-2", color)}
-            style={{boxShadow: `0 0 20px 1px ${color.replace('border-', 'hsl(var(--')).replace('-500', ')/0.3')}`}}
-        >
-            <span className="text-5xl md:text-6xl font-mono text-foreground tracking-widest select-none">{value}</span>
-        </div>
-        <span className="mt-2 text-sm md:text-base font-semibold text-muted-foreground uppercase tracking-widest">{label}</span>
-    </div>
-  );
 
   return (
     <>
