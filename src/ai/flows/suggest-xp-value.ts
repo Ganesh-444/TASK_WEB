@@ -39,9 +39,21 @@ const prompt = ai.definePrompt({
 
   Based on the following task description, suggest an appropriate XP value. Consider the task's complexity, the effort required, and its importance to the user's goals.
 
-  Task Description: {{{taskDescription}}}
+  Use the following examples as a guide for the XP scale:
+  - "Walk the dog": 10 XP
+  - "Go to the gym for an hour": 50 XP
+  - "Read a chapter of a book": 20 XP
+  - "Complete a major project for work": 500 XP
+  - "Learn a new programming language": 1000 XP
+  - "Do the laundry": 15 XP
+  - "Prepare a healthy meal": 25 XP
+  - "Run a marathon": 1500 XP
+  - "Organize the garage": 200 XP
+  - "Write a blog post": 100 XP
 
-  Provide the XP value as a number, and a brief explanation of your reasoning.
+  The user wants you to suggest an XP value for the following task. Provide the XP value as a number, and a brief explanation of your reasoning.
+
+  Task Description: {{{taskDescription}}}
   `,
 });
 
