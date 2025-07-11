@@ -327,7 +327,7 @@ export default function LevelUpApp() {
     }
 
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random()}`,
       title: newTaskTitle,
       xp: xpValue,
       category: newTaskCategory,
@@ -580,7 +580,7 @@ export default function LevelUpApp() {
                         <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
                             <li>Be Legit.</li>
                             <li>Player can delete only one quest per day.</li>
-                            <li>If you don't complete a task by its deadline, you'll lose half its XP, which can even drop your level.</li>
+                            <li>If you don&apos;t complete a task by its deadline, you&apos;ll lose half its XP, which can even drop your level.</li>
                         </ol>
                     </div>
                 </TabsContent>
@@ -611,7 +611,7 @@ export default function LevelUpApp() {
             <TabsContent value="status">
                 <div className="hud-border relative">
                     <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-primary/80 hover:text-primary hover:bg-primary/10" onClick={() => setHistorySheetOpen(true)}>
-                        <Menu className="h-24 w-24" />
+                        <Menu className="h-10 w-10" />
                     </Button>
                     <div className="p-4 md:p-6 space-y-6">
                         <div className="text-center py-2 border-b-2 border-t-2 border-primary/30">
