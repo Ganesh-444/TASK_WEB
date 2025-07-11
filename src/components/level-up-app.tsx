@@ -577,7 +577,11 @@ export default function LevelUpApp() {
                 <TabsContent value="rules">
                     <div className="p-4 rounded-lg bg-secondary/30 border border-primary/20">
                         <h3 className="font-bold text-lg mb-2">Game Rules</h3>
-                        <p className="text-muted-foreground">Rules will be added here soon!</p>
+                        <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+                            <li>Be Legit.</li>
+                            <li>Player can delete only one quest per day.</li>
+                            <li>If you don't complete a task by its deadline, you'll lose half its XP, which can even drop your level.</li>
+                        </ol>
                     </div>
                 </TabsContent>
             </Tabs>
