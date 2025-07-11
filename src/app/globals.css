@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 197 71% 53%;
+    --primary: 262 88% 66%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 215 28% 96%;
@@ -22,47 +22,47 @@
     --muted: 215 28% 96%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 33 100% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 198 93% 60%;
+    --accent-foreground: 224 71% 4%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 215 28% 93%;
     --input: 215 28% 93%;
-    --ring: 197 71% 53%;
+    --ring: 198 93% 60%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 0 0% 100%;
+    --background: 240 10% 4%;
+    --foreground: 198 93% 70%;
 
-    --card: 224 71% 4%;
-    --card-foreground: 0 0% 100%;
+    --card: 252 51% 12%;
+    --card-foreground: 198 93% 70%;
 
-    --popover: 224 71% 4%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 252 51% 12%;
+    --popover-foreground: 198 93% 70%;
 
-    --primary: 197 71% 53%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 262 88% 66%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 28% 15%;
+    --secondary: 262 88% 25%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 28% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 262 88% 15%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 33 100% 50%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 198 93% 60%;
+    --accent-foreground: 224 71% 4%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 28% 15%;
-    --input: 215 28% 15%;
-    --ring: 197 71% 53%;
+    --border: 262 88% 30%;
+    --input: 262 88% 20%;
+    --ring: 198 93% 60%;
   }
 }
 
@@ -72,5 +72,20 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .dark {
+     background-image: radial-gradient(circle at 50% 50%, hsl(262 88% 15% / 0.5), transparent);
+  }
+}
+
+@layer components {
+  .dark .card {
+    @apply bg-black/50 border-primary/20 shadow-lg shadow-primary/10;
+  }
+  .dark .tabs-list {
+     @apply bg-black/30 border-primary/20;
+  }
+  .dark .tabs-trigger[data-state=active] {
+    @apply bg-primary/80 text-primary-foreground;
   }
 }
