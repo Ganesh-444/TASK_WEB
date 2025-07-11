@@ -92,8 +92,8 @@ export function Stopwatch() {
                 <RefreshCw className={cn("h-7 w-7 transition-transform", isRotated && "rotate-90")} />
             </Button>
             
-            <div className={cn("flex flex-col items-center justify-center gap-8 transition-transform", isRotated && "rotate-90")}>
-              <p className="text-6xl md:text-8xl lg:text-9xl font-mono text-accent tracking-widest select-none">{formatTime()}</p>
+            <div className={cn("flex flex-col items-center justify-center gap-4 transition-transform", isRotated && "rotate-90")}>
+              <p className="text-5xl md:text-8xl lg:text-9xl font-mono text-accent tracking-widest select-none">{formatTime()}</p>
               <div className="flex justify-center gap-4">
                 {!isActive ? (
                   <Button variant="ghost" size="icon" onClick={handleStart} className="h-20 w-20 rounded-full">
