@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star
 } from 'lucide-react';
 
 import type { Task } from '@/types';
@@ -224,37 +224,12 @@ export default function LevelUpApp() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex items-center gap-2 p-3 bg-black/30 rounded-md border border-primary/20">
-                                <Heart className="text-red-500 h-6 w-6" />
-                                <div className="w-full">
-                                  <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>HP</span>
-                                    <span>{userLevelInfo.xpInCurrentLevel} / {userLevelInfo.xpForNextLevel}</span>
-                                  </div>
-                                  <Progress value={userLevelInfo.progress} className="h-2 [&>div]:bg-red-500"/>
-                                </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-end">
+                                <span className="font-semibold text-accent flex items-center gap-2"><Star className="h-4 w-4"/> XP</span>
+                                <span className="text-sm text-muted-foreground">{userLevelInfo.xpInCurrentLevel} / {userLevelInfo.xpForNextLevel}</span>
                             </div>
-                             <div className="flex items-center gap-2 p-3 bg-black/30 rounded-md border border-primary/20">
-                                <Zap className="text-yellow-500 h-6 w-6" />
-                                <div className="w-full">
-                                  <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>MP</span>
-                                    <span>{completedTasks.length * 10} / 1000</span>
-                                  </div>
-                                  <Progress value={(completedTasks.length * 10)/10} className="h-2 [&>div]:bg-yellow-500"/>
-                                </div>
-                            </div>
-                             <div className="flex items-center gap-2 p-3 bg-black/30 rounded-md border border-primary/20">
-                                <Sparkles className="text-cyan-400 h-6 w-6" />
-                                <div className="w-full">
-                                  <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Fatigue</span>
-                                    <span>0</span>
-                                  </div>
-                                  <Progress value={0} className="h-2"/>
-                                </div>
-                            </div>
+                            <Progress value={userLevelInfo.progress} className="h-4 [&>div]:bg-gradient-to-r [&>div]:from-accent [&>div]:to-primary"/>
                         </div>
 
                         <Separator className="my-4 bg-primary/30"/>
