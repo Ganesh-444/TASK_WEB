@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle, GraduationCap
 } from 'lucide-react';
 import { format } from "date-fns";
 
@@ -42,12 +42,14 @@ const defaultQuestTemplates: QuestTemplate[] = [
     { id: "4", title: "Do the laundry", xp: 15, attribute: 'skills' },
     { id: "5", title: "Prepare a healthy meal", xp: 25, attribute: 'skills' },
     { id: "6", title: "Write a blog post", xp: 100, attribute: 'int' },
+    { id: "7", title: "Study for 1 hour", xp: 40, attribute: 'academics' },
 ];
 
 const initialAttributeXp: Record<Attribute, number> = {
   str: 0,
   int: 0,
   skills: 0,
+  academics: 0,
 };
 
 export default function LevelUpApp() {
@@ -431,6 +433,7 @@ export default function LevelUpApp() {
             case 'str': return <Dumbbell className="h-4 w-4 text-red-500" />;
             case 'int': return <Brain className="h-4 w-4 text-blue-500" />;
             case 'skills': return <Swords className="h-4 w-4 text-yellow-500" />;
+            case 'academics': return <GraduationCap className="h-4 w-4 text-purple-500" />;
             default: return null;
         }
     }, [task.attribute]);
@@ -523,6 +526,7 @@ export default function LevelUpApp() {
                         <SelectItem value="str">Strength</SelectItem>
                         <SelectItem value="int">Intelligence</SelectItem>
                         <SelectItem value="skills">Skills</SelectItem>
+                        <SelectItem value="academics">Academics</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -560,10 +564,13 @@ export default function LevelUpApp() {
                                                 {task.isFailure ? 'Failed' : 'Completed'}: {format(new Date(task.completedAt!), "PPp")}
                                             </p>
                                         </div>
-                                        <Badge variant={task.xp > 0 ? "outline" : "destructive"} className="flex items-center gap-1">
-                                          {task.xp > 0 ? <PlusCircle className="h-3 w-3" /> : <MinusCircle className="h-3 w-3" />}
-                                          {Math.abs(task.xp)} XP
-                                        </Badge>
+                                        <div className="text-right">
+                                            <Badge variant={task.xp > 0 ? "outline" : "destructive"} className="flex items-center gap-1">
+                                                {task.xp > 0 ? <PlusCircle className="h-3 w-3" /> : <MinusCircle className="h-3 w-3" />}
+                                                {Math.abs(task.xp)} XP
+                                            </Badge>
+                                            <Badge variant="secondary" className="capitalize mt-1">{task.attribute}</Badge>
+                                        </div>
                                     </div>
                                      <p className="text-xs text-muted-foreground mt-1">
                                         Level at completion: {task.levelAtCompletion}
@@ -758,6 +765,7 @@ export default function LevelUpApp() {
                                                 <SelectItem value="str"><span className="flex items-center gap-2"><Dumbbell className="h-4 w-4" /> Strength</span></SelectItem>
                                                 <SelectItem value="int"><span className="flex items-center gap-2"><Brain className="h-4 w-4" /> Intelligence</span></SelectItem>
                                                 <SelectItem value="skills"><span className="flex items-center gap-2"><Swords className="h-4 w-4" /> Skills</span></SelectItem>
+                                                <SelectItem value="academics"><span className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> Academics</span></SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

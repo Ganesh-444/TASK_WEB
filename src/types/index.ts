@@ -1,4 +1,4 @@
-export type Attribute = 'str' | 'int' | 'skills';
+export type Attribute = 'str' | 'int' | 'skills' | 'academics';
 
 export type Task = {
   id: string;

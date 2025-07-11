@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import { Dumbbell, Brain, Swords } from 'lucide-react';
+import { Dumbbell, Brain, Swords, GraduationCap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Attribute } from '@/types';
 
@@ -25,15 +25,18 @@ export function StatsDisplay({ level, attributeXp }: { level: number, attributeX
         const baseStrength = (level - 1) * 2;
         const baseIntellect = (level - 1) * 2;
         const baseSkills = level - 1;
+        const baseAcademics = (level - 1) * 2;
         
         const strBonus = Math.floor(attributeXp.str / 50);
         const intBonus = Math.floor(attributeXp.int / 50);
         const skillsBonus = Math.floor(attributeXp.skills / 50);
+        const academicsBonus = Math.floor(attributeXp.academics / 50);
 
         return {
             str: { value: baseStrength + strBonus, bonus: strBonus, icon: <Dumbbell /> },
             int: { value: baseIntellect + intBonus, bonus: intBonus, icon: <Brain /> },
             skills: { value: baseSkills + skillsBonus, bonus: skillsBonus, icon: <Swords /> },
+            academics: { value: baseAcademics + academicsBonus, bonus: academicsBonus, icon: <GraduationCap /> },
         };
     }, [level, attributeXp]);
 
@@ -42,6 +45,7 @@ export function StatsDisplay({ level, attributeXp }: { level: number, attributeX
             <StatItem icon={stats.str.icon} label="STR" value={stats.str.value} bonus={stats.str.bonus} />
             <StatItem icon={stats.int.icon} label="INT" value={stats.int.value} bonus={stats.int.bonus} />
             <StatItem icon={stats.skills.icon} label="SKILLS" value={stats.skills.value} bonus={stats.skills.bonus} />
+            <StatItem icon={stats.academics.icon} label="ACADEMICS" value={stats.academics.value} bonus={stats.academics.bonus} />
         </div>
     );
 }
