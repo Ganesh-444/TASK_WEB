@@ -582,6 +582,7 @@ export default function LevelUpApp() {
                             <li>Be Legit.</li>
                             <li>Player can delete only one quest per day.</li>
                             <li>If you don&apos;t complete a task by its deadline, you&apos;ll lose half its XP, which can even drop your level.</li>
+                            <li>Attribute points are gained for every 50 XP earned in that specific attribute.</li>
                         </ol>
                     </div>
                 </TabsContent>
