@@ -110,7 +110,7 @@ export default function LevelUpApp() {
     setTotalXp(newTotalXp < 0 ? 0 : newTotalXp);
     setAttributeXp(prev => ({
       ...prev,
-      [attribute]: prev[attribute] + xpChange
+      [attribute]: (prev[attribute] || 0) + xpChange
     }));
 
   }, [totalXp, userLevelInfo.level, toast]);
@@ -251,7 +251,7 @@ export default function LevelUpApp() {
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayString = yesterday.toISOString().split('T')[0];
 
-        if (reaperState.lastChecked === yesterdayString) {
+        if (reaperState.lastChecked && reaperState.lastChecked >= yesterdayString) { // check if last check was yesterday or even before
             const tasksCompletedYesterday = completedTasks.filter(
                 (task) =>
                     task.completedAt &&
@@ -261,10 +261,31 @@ export default function LevelUpApp() {
 
             if (tasksCompletedYesterday < 3) {
                 const newFailures = reaperState.consecutiveFailures + 1;
-                const penalty = -(25 * newFailures);
+                
+                let penalty: number;
+                if (newFailures <= 3) {
+                    penalty = -(25 * newFailures);
+                } else {
+                    penalty = -Math.floor(Math.random() * 250);
+                }
+                
                 const randomAttribute = ATTRIBUTES[Math.floor(Math.random() * ATTRIBUTES.length)];
                 
                 handleXpChange(penalty, randomAttribute);
+
+                const penaltyTask: Task = {
+                    id: `reaper-${Date.now()}`,
+                    title: "Reaper's Toll",
+                    description: `Failed to complete 3 quests. Consecutive failures: ${newFailures}.`,
+                    xp: penalty,
+                    attribute: randomAttribute,
+                    category: 'main', // or a new category
+                    completedAt: new Date().toISOString(),
+                    levelAtCompletion: userLevelInfo.level,
+                    isFailure: true,
+                };
+
+                setCompletedTasks(prev => [penaltyTask, ...prev]);
 
                 setReaperState({
                     consecutiveFailures: newFailures,
@@ -281,10 +302,10 @@ export default function LevelUpApp() {
                 setReaperState({ consecutiveFailures: 0, lastChecked: today });
             }
         } else {
-            // If the last check was not today or yesterday, reset.
+             // If the last check was more than a day ago, just update the date.
              setReaperState({ ...reaperState, lastChecked: today });
         }
-  }, [reaperState, completedTasks, handleXpChange, isMounted, toast]);
+  }, [reaperState, completedTasks, handleXpChange, isMounted, toast, userLevelInfo.level]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -641,6 +662,9 @@ export default function LevelUpApp() {
                                             <p className="text-sm text-muted-foreground">
                                                 {task.isFailure ? 'Failed' : 'Completed'}: {format(new Date(task.completedAt!), "PPp")}
                                             </p>
+                                            {task.description && task.title === "Reaper's Toll" && (
+                                                <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                                            )}
                                         </div>
                                         <div className="text-right">
                                             <Badge variant={task.xp > 0 ? "outline" : "destructive"} className="flex items-center gap-1">
@@ -668,7 +692,7 @@ export default function LevelUpApp() {
                             <li>Player can delete only one quest per day.</li>
                             <li>If you don&apos;t complete a task by its deadline, you&apos;ll lose half its XP, which can even drop your level.</li>
                             <li>Attribute points are gained for every 50 XP earned in that specific attribute.</li>
-                            <li>If you fail to complete at least 3 tasks per day, the Reaper will deduct 25 XP. This penalty increases by 25 for each consecutive day of failure.</li>
+                            <li>Fail to complete 3 tasks daily, and the Reaper takes his due. The penalty starts at 25 XP and increases by 25 for each consecutive failure. After 3 days, the penalty is randomized up to 250 XP.</li>
                         </ol>
                     </div>
                 </TabsContent>
