@@ -274,7 +274,7 @@ export default function LevelUpApp() {
                 handleXpChange(penalty, randomAttribute);
 
                 const penaltyTask: Task = {
-                    id: `reaper-${Date.now()}`,
+                    id: `reaper-${Date.now()}-${Math.random()}`,
                     title: "Reaper's Toll",
                     description: `Failed to complete 3 quests. Consecutive failures: ${newFailures}.`,
                     xp: penalty,
