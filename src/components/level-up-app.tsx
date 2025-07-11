@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu
 } from 'lucide-react';
 
 import type { Task } from '@/types';
@@ -272,7 +272,10 @@ export default function LevelUpApp() {
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add New Quest</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Menu className="h-5 w-5" />
+                          Add New Quest
+                        </DialogTitle>
                         <DialogDescription>What challenge will you conquer next?</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleAddTask} className="space-y-6 pt-4">
