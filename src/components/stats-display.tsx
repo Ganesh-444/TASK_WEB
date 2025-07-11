@@ -22,26 +22,26 @@ const StatItem = ({ icon, label, value, bonus }: { icon: React.ReactNode, label:
 
 export function StatsDisplay({ level, attributeXp }: { level: number, attributeXp: Record<Attribute, number> }) {
     const stats = useMemo(() => {
-        const baseStrength = 10 + level * 2;
-        const baseIntellect = 10 + level * 2;
-        const baseSkills = 5 + level;
+        const baseStrength = (level - 1) * 2;
+        const baseIntellect = (level - 1) * 2;
+        const baseSkills = level - 1;
         
         const strBonus = Math.floor(attributeXp.str / 50);
         const intBonus = Math.floor(attributeXp.int / 50);
         const skillsBonus = Math.floor(attributeXp.skills / 50);
 
         return {
-            str: { value: baseStrength + strBonus, icon: <Dumbbell /> },
-            int: { value: baseIntellect + intBonus, icon: <Brain /> },
-            skills: { value: baseSkills + skillsBonus, icon: <Swords /> },
+            str: { value: baseStrength + strBonus, bonus: strBonus, icon: <Dumbbell /> },
+            int: { value: baseIntellect + intBonus, bonus: intBonus, icon: <Brain /> },
+            skills: { value: baseSkills + skillsBonus, bonus: skillsBonus, icon: <Swords /> },
         };
     }, [level, attributeXp]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <StatItem icon={stats.str.icon} label="STR" value={stats.str.value} bonus={0} />
-            <StatItem icon={stats.int.icon} label="INT" value={stats.int.value} bonus={0} />
-            <StatItem icon={stats.skills.icon} label="SKILLS" value={stats.skills.value} bonus={0} />
+            <StatItem icon={stats.str.icon} label="STR" value={stats.str.value} bonus={stats.str.bonus} />
+            <StatItem icon={stats.int.icon} label="INT" value={stats.int.value} bonus={stats.int.bonus} />
+            <StatItem icon={stats.skills.icon} label="SKILLS" value={stats.skills.value} bonus={stats.skills.bonus} />
         </div>
     );
 }
