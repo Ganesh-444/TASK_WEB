@@ -61,7 +61,7 @@ export default function LevelUpApp() {
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
   const [isManageTemplatesOpen, setManageTemplatesOpen] = useState(false);
 
-  const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 1, newLevel: 1, dialogOpen: false });
+  const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 0, newLevel: 0, dialogOpen: false });
 
   const { toast } = useToast();
 
