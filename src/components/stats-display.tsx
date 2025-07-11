@@ -44,10 +44,10 @@ const StatItem = ({ icon, label, value, bonus, xp, xpForNextPoint }: { icon: Rea
 
 export function StatsDisplay({ level, attributeXp }: { level: number, attributeXp: Record<Attribute, number> }) {
     const stats = useMemo(() => {
-        const baseStrength = level > 1 ? (level - 1) * 2 : 0;
-        const baseIntellect = level > 1 ? (level - 1) * 2 : 0;
+        const baseStrength = level > 1 ? (level - 1) : 0;
+        const baseIntellect = level > 1 ? (level - 1) : 0;
         const baseSkills = level > 1 ? level - 1 : 0;
-        const baseAcademics = level > 1 ? (level - 1) * 2 : 0;
+        const baseAcademics = level > 1 ? level - 1 : 0;
         
         const xpForNextPoint = 50;
 
