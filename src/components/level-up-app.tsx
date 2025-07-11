@@ -62,7 +62,11 @@ export default function LevelUpApp() {
   const [newTaskXp, setNewTaskXp] = useState<number | string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<'daily' | 'main'>('main');
   const [newTaskAttribute, setNewTaskAttribute] = useState<Attribute>('skills');
+  
+  const [newTaskDate, setNewTaskDate] = useState<Date | undefined>();
+  const [newTaskTime, setNewTaskTime] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState<Date | undefined>();
+
   const [suggestion, setSuggestion] = useState<{ value: number; reasoning: string } | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
@@ -133,6 +137,21 @@ export default function LevelUpApp() {
         localStorage.setItem('lastDailyReset', today);
     }
   }, [isMounted]);
+
+  useEffect(() => {
+    if (!newTaskDate) {
+        setNewTaskDeadline(undefined);
+        return;
+    }
+    const newDeadline = new Date(newTaskDate);
+    if (newTaskTime) {
+        const [hours, minutes] = newTaskTime.split(':').map(Number);
+        newDeadline.setHours(hours, minutes, 0, 0);
+    } else {
+        newDeadline.setHours(23, 59, 59, 999); // End of day if no time is set
+    }
+    setNewTaskDeadline(newDeadline);
+  }, [newTaskDate, newTaskTime]);
 
 
   const userLevelInfo = useMemo(() => calculateLevelInfo(totalXp), [totalXp]);
@@ -205,7 +224,8 @@ export default function LevelUpApp() {
     setNewTaskDescription('');
     setNewTaskCount('');
     setNewTaskUnit('none');
-    setNewTaskDeadline(undefined);
+    setNewTaskDate(undefined);
+    setNewTaskTime('');
   };
 
   const handleAddTask = (e: FormEvent) => {
@@ -239,7 +259,8 @@ export default function LevelUpApp() {
     setNewTaskXp('');
     setNewTaskCount('');
     setNewTaskUnit('none');
-    setNewTaskDeadline(undefined);
+    setNewTaskDate(undefined);
+    setNewTaskTime('');
     setSuggestion(null);
     setAddQuestDialogOpen(false);
   };
@@ -323,7 +344,7 @@ export default function LevelUpApp() {
         {task.deadline && (
             <div className={cn("text-sm flex items-center gap-1 mt-1", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                 <Clock className="h-3 w-3" />
-                <span>Due: {format(new Date(task.deadline), "PP")}</span>
+                <span>Due: {format(new Date(task.deadline), "PPp")}</span>
             </div>
         )}
       </div>
@@ -575,7 +596,7 @@ export default function LevelUpApp() {
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                                 <div className="space-y-2">
                                     <Label>Category</Label>
                                     <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
@@ -591,28 +612,37 @@ export default function LevelUpApp() {
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="deadline">Deadline (Optional)</Label>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                          "w-full justify-start text-left font-normal",
-                                          !newTaskDeadline && "text-muted-foreground"
-                                        )}
-                                      >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {newTaskDeadline ? format(newTaskDeadline, "PPP") : <span>Pick a date</span>}
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                      <Calendar
-                                        mode="single"
-                                        selected={newTaskDeadline}
-                                        onSelect={setNewTaskDeadline}
-                                        initialFocus
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
+                                  <div className="flex gap-2">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !newTaskDate && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {newTaskDate ? format(newTaskDate, "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={newTaskDate}
+                                            onSelect={setNewTaskDate}
+                                            initialFocus
+                                        />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Input
+                                        type="time"
+                                        value={newTaskTime}
+                                        onChange={(e) => setNewTaskTime(e.target.value)}
+                                        className="w-32"
+                                        disabled={!newTaskDate}
+                                    />
+                                  </div>
                                 </div>
                             </div>
 
