@@ -266,7 +266,7 @@ export default function LevelUpApp() {
               
               <Dialog open={isAddQuestDialogOpen} onOpenChange={setAddQuestDialogOpen}>
                 <DialogTrigger asChild>
-                   <Button className="fixed bottom-10 right-10 h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg transition-transform hover:scale-110">
+                   <Button className="fixed bottom-10 right-10 h-16 w-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg transition-transform hover:scale-110">
                       <Plus className="h-8 w-8" />
                    </Button>
                 </DialogTrigger>
