@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import { Dumbbell, Brain } from 'lucide-react';
+import { Dumbbell, Brain, Swords } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const StatItem = ({ icon, label, value, bonus }: { icon: React.ReactNode, label: string, value: number, bonus: number }) => (
@@ -26,6 +26,7 @@ export function StatsDisplay({ level }: { level: number }) {
         return {
             str: { value: base + 5, bonus: bonus + 2, icon: <Dumbbell /> },
             int: { value: base + 4, bonus: bonus + 2, icon: <Brain /> },
+            skills: { value: level + 1, bonus: Math.floor(level / 5), icon: <Swords /> },
         };
     }, [level]);
 
@@ -33,6 +34,7 @@ export function StatsDisplay({ level }: { level: number }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <StatItem icon={stats.str.icon} label="STR" value={stats.str.value} bonus={stats.str.bonus} />
             <StatItem icon={stats.int.icon} label="INT" value={stats.int.value} bonus={stats.int.bonus} />
+            <StatItem icon={stats.skills.icon} label="SKILLS" value={stats.skills.value} bonus={stats.skills.bonus} />
         </div>
     );
 }
