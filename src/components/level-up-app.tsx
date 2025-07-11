@@ -217,6 +217,7 @@ export default function LevelUpApp() {
 
                 const failedTask: Task = {
                     ...task,
+                    id: `${task.id}-failed-${Date.now()}`,
                     completedAt: now.toISOString(),
                     levelAtCompletion: userLevelInfo.level,
                     isFailure: true,
@@ -772,24 +773,28 @@ export default function LevelUpApp() {
               </div>
 
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><Flame className="mr-2 h-6 w-6 text-orange-500" /> Daily Quests</h3>
-                  <div className="space-y-2">
-                    <AnimatePresence>
-                      {tasks.daily.length > 0 ? tasks.daily.map(task => (
-                        <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} />
-                      )) : <p className="text-muted-foreground p-4 text-center">No daily quests for today. Add one!</p>}
-                    </AnimatePresence>
+                <div className="hud-border">
+                  <div className="p-4">
+                    <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><Flame className="mr-2 h-6 w-6 text-orange-500" /> Daily Quests</h3>
+                    <div className="space-y-2">
+                      <AnimatePresence>
+                        {tasks.daily.length > 0 ? tasks.daily.map(task => (
+                          <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} />
+                        )) : <p className="text-muted-foreground p-4 text-center">No daily quests for today. Add one!</p>}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-blue-500" /> Main Quests</h3>
-                  <div className="space-y-2">
-                    <AnimatePresence>
-                      {tasks.main.length > 0 ? tasks.main.map(task => (
-                        <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')}/>
-                      )) : <p className="text-muted-foreground p-4 text-center">Your adventure awaits. Add a main quest!</p>}
-                     </AnimatePresence>
+                <div className="hud-border">
+                  <div className="p-4">
+                    <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-blue-500" /> Main Quests</h3>
+                    <div className="space-y-2">
+                      <AnimatePresence>
+                        {tasks.main.length > 0 ? tasks.main.map(task => (
+                          <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')}/>
+                        )) : <p className="text-muted-foreground p-4 text-center">Your adventure awaits. Add a main quest!</p>}
+                       </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               </div>
