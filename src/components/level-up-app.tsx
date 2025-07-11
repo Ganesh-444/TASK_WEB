@@ -218,10 +218,6 @@ export default function LevelUpApp() {
                                 <span className="text-8xl font-bold text-accent">{userLevelInfo.level}</span>
                                 <p className="text-2xl text-muted-foreground -mt-2">LEVEL</p>
                             </div>
-                            <div className="text-center md:text-right space-y-1">
-                                <p className="text-lg"><span className="font-semibold text-muted-foreground">JOB: </span> <span className="text-primary-foreground">Life Conqueror</span></p>
-                                <p className="text-lg"><span className="font-semibold text-muted-foreground">TITLE: </span> <span className="text-primary-foreground">The One Who Overcame Inertia</span></p>
-                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -236,10 +232,6 @@ export default function LevelUpApp() {
 
                         <StatsDisplay level={userLevelInfo.level} />
 
-                        <div className="text-center p-4 bg-black/30 rounded-md border border-primary/20">
-                            <p className="text-muted-foreground">Available Ability Points</p>
-                            <p className="text-5xl font-bold text-accent">{userLevelInfo.level -1}</p>
-                        </div>
                     </div>
                 </div>
             </TabsContent>
