@@ -34,6 +34,7 @@ import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
 import { Stopwatch } from './stopwatch';
+import { ReaperIcon } from './reaper-icon';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -52,12 +53,17 @@ const initialAttributeXp: Record<Attribute, number> = {
   academics: 0,
 };
 
+const ATTRIBUTES: Attribute[] = ['str', 'int', 'skills', 'academics'];
+
+
 export default function LevelUpApp() {
   const [totalXp, setTotalXp] = useState(0);
   const [attributeXp, setAttributeXp] = useState<Record<Attribute, number>>(initialAttributeXp);
   const [tasks, setTasks] = useState<{ daily: Task[]; main: Task[] }>({ daily: [], main: [] });
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  
+  const [reaperState, setReaperState] = useState({ consecutiveFailures: 0, lastChecked: '' });
   
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
@@ -101,7 +107,7 @@ export default function LevelUpApp() {
       });
     }
     
-    setTotalXp(newTotalXp);
+    setTotalXp(newTotalXp < 0 ? 0 : newTotalXp);
     setAttributeXp(prev => ({
       ...prev,
       [attribute]: prev[attribute] + xpChange
@@ -119,6 +125,8 @@ export default function LevelUpApp() {
     const storedTasks = localStorage.getItem('tasks');
     const storedCompletedTasks = localStorage.getItem('completedTasks');
     const storedQuestTemplates = localStorage.getItem('questTemplates');
+    const storedReaperState = localStorage.getItem('reaperState');
+
 
     if (storedXp) setTotalXp(JSON.parse(storedXp));
     if (storedAttributeXp) setAttributeXp(JSON.parse(storedAttributeXp));
@@ -129,6 +137,7 @@ export default function LevelUpApp() {
     } else {
       setQuestTemplates(defaultQuestTemplates);
     }
+    if (storedReaperState) setReaperState(JSON.parse(storedReaperState));
 
 
     setIsMounted(true);
@@ -159,6 +168,13 @@ export default function LevelUpApp() {
     }
   }, [questTemplates, isMounted]);
   
+  useEffect(() => {
+      if (isMounted) {
+          localStorage.setItem('reaperState', JSON.stringify(reaperState));
+      }
+  }, [reaperState, isMounted]);
+
+
   useEffect(() => {
     const lastReset = localStorage.getItem('lastDailyReset');
     const today = new Date().toISOString().split('T')[0];
@@ -224,13 +240,64 @@ export default function LevelUpApp() {
         setCompletedTasks(newCompletedTasks);
     }
   }, [tasks, completedTasks, handleXpChange, userLevelInfo.level, toast]);
+  
+  const checkReaperPenalty = useCallback(() => {
+        const today = new Date().toISOString().split('T')[0];
+        if (reaperState.lastChecked === today || !isMounted) {
+            return;
+        }
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayString = yesterday.toISOString().split('T')[0];
+
+        if (reaperState.lastChecked === yesterdayString) {
+            const tasksCompletedYesterday = completedTasks.filter(
+                (task) =>
+                    task.completedAt &&
+                    task.completedAt.startsWith(yesterdayString) &&
+                    !task.isFailure
+            ).length;
+
+            if (tasksCompletedYesterday < 3) {
+                const newFailures = reaperState.consecutiveFailures + 1;
+                const penalty = -(25 * newFailures);
+                const randomAttribute = ATTRIBUTES[Math.floor(Math.random() * ATTRIBUTES.length)];
+                
+                handleXpChange(penalty, randomAttribute);
+
+                setReaperState({
+                    consecutiveFailures: newFailures,
+                    lastChecked: today,
+                });
+
+                toast({
+                    title: "The Reaper's Toll!",
+                    description: `You failed to complete 3 quests yesterday. You lose ${-penalty} XP! Consecutive failures: ${newFailures}.`,
+                    variant: "destructive",
+                    duration: 9000
+                });
+            } else {
+                setReaperState({ consecutiveFailures: 0, lastChecked: today });
+            }
+        } else {
+            // If the last check was not today or yesterday, reset.
+             setReaperState({ ...reaperState, lastChecked: today });
+        }
+  }, [reaperState, completedTasks, handleXpChange, isMounted, toast]);
 
   useEffect(() => {
     if (!isMounted) return;
 
-    const intervalId = setInterval(checkOverdueTasks, 60000); // Check every minute
-    return () => clearInterval(intervalId);
-  }, [isMounted, checkOverdueTasks]);
+    checkReaperPenalty();
+    const penaltyInterval = setInterval(checkReaperPenalty, 60 * 60 * 1000); // Check every hour
+
+    const overdueInterval = setInterval(checkOverdueTasks, 60000); // Check every minute
+    return () => {
+        clearInterval(overdueInterval);
+        clearInterval(penaltyInterval);
+    }
+  }, [isMounted, checkOverdueTasks, checkReaperPenalty]);
 
   const handleStartTask = (taskId: string, category: 'daily' | 'main') => {
     setTasks(prev => {
@@ -397,6 +464,17 @@ export default function LevelUpApp() {
     setQuestTemplates(templates => templates.filter(t => t.id !== id));
     toast({ title: 'Template Deleted', variant: 'destructive' });
   };
+
+  const todaysCompletions = useMemo(() => {
+    if (!isMounted) return 0;
+    const today = new Date().toISOString().split('T')[0];
+    return completedTasks.filter(
+        task =>
+            task.completedAt &&
+            task.completedAt.startsWith(today) &&
+            !task.isFailure
+    ).length;
+  }, [completedTasks, isMounted]);
 
   const TaskItem = ({ task, onComplete, onDelete, onStart }: {task: Task, onComplete: () => void, onDelete: () => void, onStart: () => void}) => {
     const [remainingTime, setRemainingTime] = useState('');
@@ -590,6 +668,7 @@ export default function LevelUpApp() {
                             <li>Player can delete only one quest per day.</li>
                             <li>If you don&apos;t complete a task by its deadline, you&apos;ll lose half its XP, which can even drop your level.</li>
                             <li>Attribute points are gained for every 50 XP earned in that specific attribute.</li>
+                            <li>If you fail to complete at least 3 tasks per day, the Reaper will deduct 25 XP. This penalty increases by 25 for each consecutive day of failure.</li>
                         </ol>
                     </div>
                 </TabsContent>
@@ -651,6 +730,22 @@ export default function LevelUpApp() {
             </TabsContent>
 
             <TabsContent value="quests" className="mt-6 relative">
+              <div className="absolute top-0 right-0 text-center">
+                  <Popover>
+                      <PopoverTrigger>
+                          <div className="flex flex-col items-center">
+                            <ReaperIcon className="h-12 w-12" />
+                            <span className="text-sm font-bold text-destructive">({todaysCompletions}/3)</span>
+                          </div>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-60">
+                          <h4 className="font-medium text-destructive">Reaper's Due</h4>
+                          <p className="text-sm text-muted-foreground">Complete 3 quests daily to avoid the Reaper's penalty.</p>
+                          <p className="text-sm text-muted-foreground mt-2">Consecutive failures: <span className="font-bold text-destructive">{reaperState.consecutiveFailures}</span></p>
+                      </PopoverContent>
+                  </Popover>
+              </div>
+
               <div className="space-y-6">
                 <div>
                   <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><Flame className="mr-2 h-6 w-6 text-orange-500" /> Daily Quests</h3>
