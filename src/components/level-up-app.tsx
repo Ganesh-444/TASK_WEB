@@ -28,6 +28,14 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { StatsDisplay } from './stats-display';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 
+const questTemplates = [
+    { title: "Walk the dog", xp: 10 },
+    { title: "Go to the gym", xp: 50 },
+    { title: "Read a chapter of a book", xp: 20 },
+    { title: "Do the laundry", xp: 15 },
+    { title: "Prepare a healthy meal", xp: 25 },
+    { title: "Write a blog post", xp: 100 },
+];
 
 export default function LevelUpApp() {
   const [totalXp, setTotalXp] = useState(0);
@@ -132,6 +140,11 @@ export default function LevelUpApp() {
       description: "The task has been removed from your list.",
     });
   }
+  
+  const handleApplyTemplate = (template: { title: string; xp: number }) => {
+    setNewTaskTitle(template.title);
+    setNewTaskXp(template.xp);
+  };
 
   const handleAddTask = (e: FormEvent) => {
     e.preventDefault();
@@ -270,7 +283,7 @@ export default function LevelUpApp() {
                       <Plus className="h-8 w-8" />
                    </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                           <Menu className="h-5 w-5" />
@@ -278,6 +291,19 @@ export default function LevelUpApp() {
                         </DialogTitle>
                         <DialogDescription>What challenge will you conquer next?</DialogDescription>
                     </DialogHeader>
+                    
+                    <div className="space-y-2">
+                        <Label>Quest Templates</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {questTemplates.map(template => (
+                                <Button key={template.title} variant="outline" size="sm" onClick={() => handleApplyTemplate(template)}>
+                                    {template.title}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                    <Separator />
+
                     <form onSubmit={handleAddTask} className="space-y-6 pt-4">
                         <div className="space-y-2">
                             <Label htmlFor="title">Quest Title</Label>
