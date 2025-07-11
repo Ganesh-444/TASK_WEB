@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown
 } from 'lucide-react';
 
 import type { Task, QuestTemplate, Attribute } from '@/types';
@@ -28,6 +28,7 @@ import { LevelUpDialog } from './level-up-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { StatsDisplay } from './stats-display';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from './ui/dialog';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/dropdown-menu';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -450,14 +451,21 @@ export default function LevelUpApp() {
                     
                     <div className="overflow-y-auto pr-4 space-y-4">
                         <div className="space-y-2">
-                            <Label>Quest Templates</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {questTemplates.map(template => (
-                                    <Button key={template.id} variant="outline" size="sm" onClick={() => handleApplyTemplate(template)}>
-                                        {template.title}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full">
+                                        Quest Templates
+                                        <ChevronDown className="ml-2 h-4 w-4" />
                                     </Button>
-                                ))}
-                            </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                                    {questTemplates.map(template => (
+                                        <DropdownMenuItem key={template.id} onClick={() => handleApplyTemplate(template)}>
+                                            <span>{template.title}</span>
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                         <Separator />
 
