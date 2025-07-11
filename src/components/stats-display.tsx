@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { Dumbbell, Brain, Swords } from 'lucide-react';
 import { motion } from 'framer-motion';
+import type { Attribute } from '@/types';
 
 const StatItem = ({ icon, label, value, bonus }: { icon: React.ReactNode, label: string, value: number, bonus: number }) => (
     <motion.div 
@@ -14,27 +15,33 @@ const StatItem = ({ icon, label, value, bonus }: { icon: React.ReactNode, label:
         <div className="flex items-baseline gap-2">
             <span className="text-lg font-semibold text-muted-foreground">{label}:</span>
             <span className="text-xl font-bold text-primary-foreground">{value}</span>
-            <span className="text-lg font-medium text-green-400">(+{bonus})</span>
+            {bonus > 0 && <span className="text-lg font-medium text-green-400">(+{bonus})</span>}
         </div>
     </motion.div>
 );
 
-export function StatsDisplay({ level }: { level: number }) {
+export function StatsDisplay({ level, attributeXp }: { level: number, attributeXp: Record<Attribute, number> }) {
     const stats = useMemo(() => {
-        const base = 10 + level * 2;
-        const bonus = Math.floor(level / 2);
+        const baseStrength = 10 + level * 2;
+        const baseIntellect = 10 + level * 2;
+        const baseSkills = 5 + level;
+        
+        const strBonus = Math.floor(attributeXp.str / 50);
+        const intBonus = Math.floor(attributeXp.int / 50);
+        const skillsBonus = Math.floor(attributeXp.skills / 50);
+
         return {
-            str: { value: base + 5, bonus: bonus + 2, icon: <Dumbbell /> },
-            int: { value: base + 4, bonus: bonus + 2, icon: <Brain /> },
-            skills: { value: level + 1, bonus: Math.floor(level / 5), icon: <Swords /> },
+            str: { value: baseStrength + strBonus, icon: <Dumbbell /> },
+            int: { value: baseIntellect + intBonus, icon: <Brain /> },
+            skills: { value: baseSkills + skillsBonus, icon: <Swords /> },
         };
-    }, [level]);
+    }, [level, attributeXp]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <StatItem icon={stats.str.icon} label="STR" value={stats.str.value} bonus={stats.str.bonus} />
-            <StatItem icon={stats.int.icon} label="INT" value={stats.int.value} bonus={stats.int.bonus} />
-            <StatItem icon={stats.skills.icon} label="SKILLS" value={stats.skills.value} bonus={stats.skills.bonus} />
+            <StatItem icon={stats.str.icon} label="STR" value={stats.str.value} bonus={0} />
+            <StatItem icon={stats.int.icon} label="INT" value={stats.int.value} bonus={0} />
+            <StatItem icon={stats.skills.icon} label="SKILLS" value={stats.skills.value} bonus={0} />
         </div>
     );
 }

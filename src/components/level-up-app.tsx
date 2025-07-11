@@ -7,7 +7,7 @@ import {
   Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings
 } from 'lucide-react';
 
-import type { Task, QuestTemplate } from '@/types';
+import type { Task, QuestTemplate, Attribute } from '@/types';
 import { XP_PER_LEVEL, calculateLevelInfo } from '@/lib/xp-utils';
 import { getXpSuggestion } from '@/app/actions';
 
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,16 +30,23 @@ import { StatsDisplay } from './stats-display';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from './ui/dialog';
 
 const defaultQuestTemplates: QuestTemplate[] = [
-    { id: "1", title: "Walk the dog", xp: 10 },
-    { id: "2", title: "Go to the gym", xp: 50 },
-    { id: "3", title: "Read a chapter of a book", xp: 20 },
-    { id: "4", title: "Do the laundry", xp: 15 },
-    { id: "5", title: "Prepare a healthy meal", xp: 25 },
-    { id: "6", title: "Write a blog post", xp: 100 },
+    { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
+    { id: "2", title: "Go to the gym", xp: 50, attribute: 'str' },
+    { id: "3", title: "Read a chapter of a book", xp: 20, attribute: 'int' },
+    { id: "4", title: "Do the laundry", xp: 15, attribute: 'skills' },
+    { id: "5", title: "Prepare a healthy meal", xp: 25, attribute: 'skills' },
+    { id: "6", title: "Write a blog post", xp: 100, attribute: 'int' },
 ];
+
+const initialAttributeXp: Record<Attribute, number> = {
+  str: 0,
+  int: 0,
+  skills: 0,
+};
 
 export default function LevelUpApp() {
   const [totalXp, setTotalXp] = useState(0);
+  const [attributeXp, setAttributeXp] = useState<Record<Attribute, number>>(initialAttributeXp);
   const [tasks, setTasks] = useState<{ daily: Task[]; main: Task[] }>({ daily: [], main: [] });
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
   const [isMounted, setIsMounted] = useState(false);
@@ -47,6 +55,7 @@ export default function LevelUpApp() {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskXp, setNewTaskXp] = useState<number | string>('');
   const [newTaskCategory, setNewTaskCategory] = useState<'daily' | 'main'>('main');
+  const [newTaskAttribute, setNewTaskAttribute] = useState<Attribute>('skills');
   const [suggestion, setSuggestion] = useState<{ value: number; reasoning: string } | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
@@ -65,11 +74,13 @@ export default function LevelUpApp() {
 
   useEffect(() => {
     const storedXp = localStorage.getItem('totalXp');
+    const storedAttributeXp = localStorage.getItem('attributeXp');
     const storedTasks = localStorage.getItem('tasks');
     const storedCompletedTasks = localStorage.getItem('completedTasks');
     const storedQuestTemplates = localStorage.getItem('questTemplates');
 
     if (storedXp) setTotalXp(JSON.parse(storedXp));
+    if (storedAttributeXp) setAttributeXp(JSON.parse(storedAttributeXp));
     if (storedTasks) setTasks(JSON.parse(storedTasks));
     if (storedCompletedTasks) setCompletedTasks(JSON.parse(storedCompletedTasks));
     if (storedQuestTemplates) {
@@ -85,8 +96,9 @@ export default function LevelUpApp() {
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem('totalXp', JSON.stringify(totalXp));
+      localStorage.setItem('attributeXp', JSON.stringify(attributeXp));
     }
-  }, [totalXp, isMounted]);
+  }, [totalXp, attributeXp, isMounted]);
 
   useEffect(() => {
     if (isMounted) {
@@ -133,6 +145,10 @@ export default function LevelUpApp() {
     }
 
     setTotalXp(newTotalXp);
+    setAttributeXp(prev => ({
+      ...prev,
+      [task.attribute]: prev[task.attribute] + task.xp
+    }));
     
     const newTasks = { ...tasks };
     newTasks[category] = newTasks[category].filter(t => t.id !== taskId);
@@ -157,9 +173,10 @@ export default function LevelUpApp() {
     });
   }
   
-  const handleApplyTemplate = (template: { title: string; xp: number }) => {
+  const handleApplyTemplate = (template: QuestTemplate) => {
     setNewTaskTitle(template.title);
     setNewTaskXp(template.xp);
+    setNewTaskAttribute(template.attribute);
   };
 
   const handleAddTask = (e: FormEvent) => {
@@ -180,6 +197,7 @@ export default function LevelUpApp() {
       description: newTaskDescription,
       xp: xpValue,
       category: newTaskCategory,
+      attribute: newTaskAttribute,
     };
     
     setTasks(prev => ({ ...prev, [newTaskCategory]: [...prev[newTaskCategory], newTask]}));
@@ -206,23 +224,23 @@ export default function LevelUpApp() {
   const handleSaveTemplate = (e: FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    const titleInput = form.elements.namedItem('title') as HTMLInputElement;
-    const xpInput = form.elements.namedItem('xp') as HTMLInputElement;
-    const title = titleInput.value;
-    const xp = Number(xpInput.value);
+    const formData = new FormData(form);
+    const title = formData.get('title') as string;
+    const xp = Number(formData.get('xp'));
+    const attribute = formData.get('attribute') as Attribute;
 
-    if (!title || isNaN(xp) || xp <= 0) {
-      toast({ title: 'Invalid template data', description: 'Please provide a valid title and positive XP value.', variant: 'destructive'});
+    if (!title || isNaN(xp) || xp <= 0 || !attribute) {
+      toast({ title: 'Invalid template data', description: 'Please provide a valid title, positive XP value, and attribute.', variant: 'destructive'});
       return;
     }
 
     if (editingTemplate) {
       // Edit existing
-      setQuestTemplates(templates => templates.map(t => t.id === editingTemplate.id ? { ...t, title, xp } : t));
+      setQuestTemplates(templates => templates.map(t => t.id === editingTemplate.id ? { ...t, title, xp, attribute } : t));
       toast({ title: 'Template Updated' });
     } else {
       // Add new
-      const newTemplate: QuestTemplate = { id: Date.now().toString(), title, xp };
+      const newTemplate: QuestTemplate = { id: Date.now().toString(), title, xp, attribute };
       setQuestTemplates(templates => [...templates, newTemplate]);
       toast({ title: 'Template Added' });
     }
@@ -235,7 +253,18 @@ export default function LevelUpApp() {
     toast({ title: 'Template Deleted', variant: 'destructive' });
   };
 
-  const TaskItem = ({ task, onComplete, onDelete }: {task: Task, onComplete: () => void, onDelete: () => void}) => (
+  const TaskItem = ({ task, onComplete, onDelete }: {task: Task, onComplete: () => void, onDelete: () => void}) => {
+    
+    const attributeIcon = useMemo(() => {
+        switch(task.attribute) {
+            case 'str': return <Dumbbell className="h-4 w-4 text-red-500" />;
+            case 'int': return <Brain className="h-4 w-4 text-blue-500" />;
+            case 'skills': return <Swords className="h-4 w-4 text-yellow-500" />;
+            default: return null;
+        }
+    }, [task.attribute]);
+
+    return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 20 }}
@@ -245,7 +274,7 @@ export default function LevelUpApp() {
     >
       <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} />
       <div className="flex-1">
-        <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer">{task.title}</label>
+        <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
       </div>
       <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
@@ -253,10 +282,13 @@ export default function LevelUpApp() {
         <Trash2 className="h-4 w-4" />
       </Button>
     </motion.div>
-  );
+  )};
 
   const ManageTemplatesDialog = () => (
-    <Dialog open={isManageTemplatesOpen} onOpenChange={setManageTemplatesOpen}>
+    <Dialog open={isManageTemplatesOpen} onOpenChange={(isOpen) => {
+        setManageTemplatesOpen(isOpen);
+        if (!isOpen) setEditingTemplate(null);
+    }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Manage Quest Templates</DialogTitle>
@@ -267,6 +299,7 @@ export default function LevelUpApp() {
             <div key={template.id} className="flex items-center gap-2 p-2 rounded-md bg-secondary/20">
               <span className="flex-1 font-medium">{template.title}</span>
               <Badge variant="outline">{template.xp} XP</Badge>
+              <Badge variant="outline" className="capitalize">{template.attribute}</Badge>
               <Button variant="ghost" size="icon" onClick={() => setEditingTemplate(template)}><Edit className="h-4 w-4" /></Button>
               <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={() => handleDeleteTemplate(template.id)}><Trash2 className="h-4 w-4" /></Button>
             </div>
@@ -276,13 +309,26 @@ export default function LevelUpApp() {
         <form onSubmit={handleSaveTemplate} className="space-y-4">
           <h4 className="font-medium">{editingTemplate ? 'Edit Template' : 'Add New Template'}</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="template-title">Title</Label>
               <Input id="template-title" name="title" placeholder="Template title" defaultValue={editingTemplate?.title} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="template-xp">XP</Label>
               <Input id="template-xp" name="xp" type="number" placeholder="XP Value" defaultValue={editingTemplate?.xp} required />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="template-attribute">Attribute</Label>
+                <Select name="attribute" defaultValue={editingTemplate?.attribute || "skills"}>
+                    <SelectTrigger id="template-attribute">
+                        <SelectValue placeholder="Select attribute" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="str">Strength</SelectItem>
+                        <SelectItem value="int">Intelligence</SelectItem>
+                        <SelectItem value="skills">Skills</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
           </div>
           <DialogFooter>
@@ -335,7 +381,7 @@ export default function LevelUpApp() {
 
                         <Separator className="my-4 bg-primary/30"/>
 
-                        <StatsDisplay level={userLevelInfo.level} />
+                        <StatsDisplay level={userLevelInfo.level} attributeXp={attributeXp} />
 
                     </div>
                 </div>
@@ -409,18 +455,18 @@ export default function LevelUpApp() {
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                            <div className="space-y-2">
-                            <Label>Category</Label>
-                                <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
-                                <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="daily" id="daily" />
-                                <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="main" id="main" />
-                                <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
-                                </div>
-                            </RadioGroup>
+                             <div className="space-y-2">
+                                <Label htmlFor="attribute">Attribute</Label>
+                                <Select value={newTaskAttribute} onValueChange={(v: Attribute) => setNewTaskAttribute(v)}>
+                                    <SelectTrigger id="attribute">
+                                        <SelectValue placeholder="Select attribute" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="str"><span className="flex items-center gap-2"><Dumbbell className="h-4 w-4" /> Strength</span></SelectItem>
+                                        <SelectItem value="int"><span className="flex items-center gap-2"><Brain className="h-4 w-4" /> Intelligence</span></SelectItem>
+                                        <SelectItem value="skills"><span className="flex items-center gap-2"><Swords className="h-4 w-4" /> Skills</span></SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="space-y-2">
@@ -443,6 +489,21 @@ export default function LevelUpApp() {
                             </div>
                             </div>
                         </div>
+
+                         <div className="space-y-2">
+                            <Label>Category</Label>
+                                <RadioGroup defaultValue="main" value={newTaskCategory} onValueChange={(v: 'daily' | 'main') => setNewTaskCategory(v)} className="flex space-x-4 pt-2">
+                                <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="daily" id="daily" />
+                                <Label htmlFor="daily" className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /> Daily</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="main" id="main" />
+                                <Label htmlFor="main" className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-500" /> Main</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+
                         <Button type="submit" className="w-full"><Plus className="mr-2 h-4 w-4" /> Add Quest</Button>
                     </form>
                 </DialogContent>
