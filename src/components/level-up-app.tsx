@@ -755,45 +755,47 @@ export default function LevelUpApp() {
                 </div>
             </TabsContent>
 
-            <TabsContent value="quests" className="mt-6 relative">
-              <div className="absolute top-0 right-0 text-center">
-                  <Popover>
-                      <PopoverTrigger>
-                          <div className="flex flex-col items-center">
-                            <ReaperIcon className="h-12 w-12" />
-                            <span className="text-sm font-bold text-destructive">({todaysCompletions}/3)</span>
-                          </div>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-60">
-                          <h4 className="font-medium text-destructive">Reaper's Due</h4>
-                          <p className="text-sm text-muted-foreground">Complete 3 quests daily to avoid the Reaper's penalty.</p>
-                          <p className="text-sm text-muted-foreground mt-2">Consecutive failures: <span className="font-bold text-destructive">{reaperState.consecutiveFailures}</span></p>
-                      </PopoverContent>
-                  </Popover>
-              </div>
+            <TabsContent value="quests" className="mt-6">
+              <div className="relative">
+                <div className="absolute top-0 right-0 text-center z-10">
+                    <Popover>
+                        <PopoverTrigger>
+                            <div className="flex flex-col items-center">
+                              <ReaperIcon className="h-12 w-12" />
+                              <span className="text-sm font-bold text-destructive">({todaysCompletions}/3)</span>
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-60">
+                            <h4 className="font-medium text-destructive">Reaper's Due</h4>
+                            <p className="text-sm text-muted-foreground">Complete 3 quests daily to avoid the Reaper's penalty.</p>
+                            <p className="text-sm text-muted-foreground mt-2">Consecutive failures: <span className="font-bold text-destructive">{reaperState.consecutiveFailures}</span></p>
+                        </PopoverContent>
+                    </Popover>
+                </div>
 
-              <div className="space-y-6">
-                <div className="hud-border">
-                  <div className="p-4">
-                    <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><Flame className="mr-2 h-6 w-6 text-orange-500" /> Daily Quests</h3>
-                    <div className="space-y-2">
-                      <AnimatePresence>
-                        {tasks.daily.length > 0 ? tasks.daily.map(task => (
-                          <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} />
-                        )) : <p className="text-muted-foreground p-4 text-center">No daily quests for today. Add one!</p>}
-                      </AnimatePresence>
+                <div className="space-y-6">
+                  <div className="hud-border">
+                    <div className="p-4">
+                      <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><Flame className="mr-2 h-6 w-6 text-orange-500" /> Daily Quests</h3>
+                      <div className="space-y-2">
+                        <AnimatePresence>
+                          {tasks.daily.length > 0 ? tasks.daily.map(task => (
+                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} />
+                          )) : <p className="text-muted-foreground p-4 text-center">No daily quests for today. Add one!</p>}
+                        </AnimatePresence>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="hud-border">
-                  <div className="p-4">
-                    <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-blue-500" /> Main Quests</h3>
-                    <div className="space-y-2">
-                      <AnimatePresence>
-                        {tasks.main.length > 0 ? tasks.main.map(task => (
-                          <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')}/>
-                        )) : <p className="text-muted-foreground p-4 text-center">Your adventure awaits. Add a main quest!</p>}
-                       </AnimatePresence>
+                  <div className="hud-border">
+                    <div className="p-4">
+                      <h3 className="text-2xl font-bold font-headline mb-4 flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-blue-500" /> Main Quests</h3>
+                      <div className="space-y-2">
+                        <AnimatePresence>
+                          {tasks.main.length > 0 ? tasks.main.map(task => (
+                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')}/>
+                          )) : <p className="text-muted-foreground p-4 text-center">Your adventure awaits. Add a main quest!</p>}
+                         </AnimatePresence>
+                      </div>
                     </div>
                   </div>
                 </div>
