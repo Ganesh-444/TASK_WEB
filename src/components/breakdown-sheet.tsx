@@ -22,7 +22,13 @@ type BreakdownSheetProps = {
   onAddTask: (task: Task) => void;
 };
 
-const SubTaskReviewItem = ({ subTask }: { subTask: SubTask }) => {
+// This is a temporary type for the AI output which doesn't have an ID.
+type BreakdownSubTask = Omit<SubTask, 'id' | 'completed' | 'subTasks'> & {
+    subTasks?: BreakdownSubTask[];
+};
+
+
+const SubTaskReviewItem = ({ subTask }: { subTask: BreakdownSubTask }) => {
     const [isOpen, setIsOpen] = useState(true);
     const hasSubtasks = subTask.subTasks && subTask.subTasks.length > 0;
     
@@ -39,7 +45,7 @@ const SubTaskReviewItem = ({ subTask }: { subTask: SubTask }) => {
             </div>
             {hasSubtasks && isOpen && (
                 <div className="pl-6 mt-2 space-y-2 border-l border-dashed ml-2">
-                    {subTask.subTasks?.map(st => <SubTaskReviewItem key={st.id} subTask={st} />)}
+                    {subTask.subTasks?.map(st => <SubTaskReviewItem key={`${st.title}-${Math.random()}`} subTask={st} />)}
                 </div>
             )}
         </div>
@@ -140,7 +146,7 @@ export function BreakdownSheet({ open, onOpenChange, onAddTask }: BreakdownSheet
                     <p className="text-muted-foreground">Total Suggested XP: <span className="font-bold">{breakdown.xp}</span></p>
                     <div className="mt-4 space-y-3">
                         {breakdown.subTasks.map(subTask => (
-                            <SubTaskReviewItem key={subTask.title} subTask={{...subTask, id: `review-${Math.random()}`, completed: false}}/>
+                            <SubTaskReviewItem key={`${subTask.title}-${Math.random()}`} subTask={subTask}/>
                         ))}
                     </div>
                 </div>
