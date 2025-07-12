@@ -1,18 +1,17 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, SubTask, Attribute } from '@/types';
-import { ArrowLeft, ArrowRight, Wand2, Hammer, ChevronRight } from 'lucide-react';
+import { ArrowRight, Hammer } from 'lucide-react';
 import { Badge } from './ui/badge';
-import { cn } from '@/lib/utils';
 import { Textarea } from './ui/textarea';
 
 type ManualQuestBuilderSheetProps = {
@@ -42,10 +41,10 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
       toast({ title: 'No tasks entered', description: 'Please paste or type your list of tasks.', variant: 'destructive' });
       return;
     }
-    const initialTasks = lines.map((line, index) => ({
+    const initialTasks: HierarchicalTask[] = lines.map((line, index) => ({
       id: `task-${Date.now()}-${index}`,
       title: line.trim(),
-      level: 1,
+      level: 1, // All start at level 1
       subTasks: []
     }));
 
@@ -53,7 +52,7 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
       const parentTask: HierarchicalTask = {
         id: `task-group-${Date.now()}`,
         title: overallTitle,
-        level: 0,
+        level: 0, // The project title is level 0
         subTasks: initialTasks
       };
       setTasks([parentTask]);
@@ -67,6 +66,7 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
     const updateRecursively = (nodes: HierarchicalTask[]): HierarchicalTask[] => {
       return nodes.map(node => {
         if (node.id === taskId) {
+          // Toggle between current classification level and the next one
           return { ...node, level: node.level === classificationLevel ? classificationLevel + 1 : classificationLevel };
         }
         if (node.subTasks.length > 0) {
@@ -79,42 +79,58 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
   };
   
   const getStructuredTasks = (nodes: HierarchicalTask[]): HierarchicalTask[] => {
-      const structured: HierarchicalTask[] = [];
+      let structured: HierarchicalTask[] = [];
       let currentMainTask: HierarchicalTask | null = null;
   
       for (const node of nodes) {
           if (node.level === classificationLevel) {
               if (currentMainTask) {
+                  // Recursively structure the sub-tasks of the previous main task before moving on
+                  currentMainTask.subTasks = getStructuredTasks(currentMainTask.subTasks);
                   structured.push(currentMainTask);
               }
+              // This is a new main task for the current classification level
               currentMainTask = { ...node, subTasks: [] };
-          } else if (currentMainTask) {
+          } else if (node.level > classificationLevel && currentMainTask) {
+              // This is a sub-task for the current main task
               currentMainTask.subTasks.push(node);
           } else {
-              // This handles tasks before the first main task is declared
-              structured.push(node);
+              // This task is at a level below the current classification, or there's no active main task
+              if(currentMainTask) {
+                currentMainTask.subTasks = getStructuredTasks(currentMainTask.subTasks);
+                structured.push(currentMainTask);
+                currentMainTask = null;
+              }
+              structured.push({
+                ...node,
+                subTasks: getStructuredTasks(node.subTasks)
+              });
           }
       }
   
       if (currentMainTask) {
+          currentMainTask.subTasks = getStructuredTasks(currentMainTask.subTasks);
           structured.push(currentMainTask);
       }
   
-      // Recursively structure sub-tasks
-      return structured.map(node => ({
-          ...node,
-          subTasks: node.subTasks.length > 0 ? getStructuredTasks(node.subTasks) : []
-      }));
+      return structured;
   };
   
   const handleBranchMore = () => {
-      // Re-structure tasks based on the current classification
       const structured = getStructuredTasks(tasks);
       setTasks(structured);
       setClassificationLevel(prev => prev + 1);
       toast({ title: 'Branched Deeper!', description: `Now classifying level ${classificationLevel + 1} tasks.` });
   };
   
+  const handleBackStep2 = () => {
+    if (classificationLevel > 1) {
+        setClassificationLevel(prev => prev - 1);
+    } else {
+        setStep(1);
+    }
+  };
+
   const handleFinishSetup = () => {
     const finalTasks = getStructuredTasks(tasks);
     setTasks(finalTasks);
@@ -176,19 +192,33 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
   );
 
   const ClassificationItem = ({ task }: { task: HierarchicalTask }) => (
-     <div style={{ marginLeft: `${(task.level - 1) * 20}px` }} className="flex items-center gap-2 p-2 rounded-md bg-secondary/20">
+     <div style={{ marginLeft: `${(task.level - 1) * 20}px` }} className="flex items-center gap-2 p-2 rounded-md bg-secondary/20 my-1">
         <span className="flex-1 font-medium">{task.title}</span>
         {task.level === classificationLevel ? (
             <Button size="sm" variant="secondary" onClick={() => toggleMainQuest(task.id)}>
                 Make Sub-task
             </Button>
         ) : (
-            <Button size="sm" variant="outline" onClick={() => toggleMainQuest(task.id)}>
+             <Button size="sm" variant="outline" onClick={() => toggleMainQuest(task.id)}>
                 Make Main Quest
             </Button>
         )}
      </div>
   );
+
+  const renderClassificationTree = (nodes: HierarchicalTask[]) => {
+    return nodes.map(node => {
+        // Only render the button if the task is at the current classification level or one level above
+        const showButton = node.level >= classificationLevel;
+        return (
+            <React.Fragment key={node.id}>
+                {showButton && <ClassificationItem task={node} />}
+                {node.subTasks.length > 0 && renderClassificationTree(node.subTasks)}
+            </React.Fragment>
+        )
+    });
+  }
+
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if(!isOpen) handleReset(); else onOpenChange(true); }}>
@@ -197,7 +227,7 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
           <SheetTitle className="flex items-center gap-2"><Hammer className="h-5 w-5" /> Manual Quest Builder</SheetTitle>
           <SheetDescription>
             {step === 1 && "Paste your task list and give it an overall title if you like."}
-            {step === 2 && `Step ${classificationLevel + 1}: Classify Level ${classificationLevel} main quests. Tasks below a main quest become its sub-tasks.`}
+            {step === 2 && `Step ${classificationLevel}: Classify Level ${classificationLevel} main quests. Tasks below a main quest become its sub-tasks.`}
             {step === 3 && "Final review. Assign attributes and categories to your new quests."}
           </SheetDescription>
         </SheetHeader>
@@ -228,7 +258,7 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
                 <h3 className="font-semibold text-lg">Classify Level {classificationLevel} Quests</h3>
                 <p className="text-sm text-muted-foreground">Click "Make Main Quest" to designate a task as a top-level item for this classification level.</p>
                 <div className="p-4 rounded-lg border bg-card text-card-foreground space-y-2">
-                    {tasks.map(task => <ClassificationItem key={task.id} task={task} />)}
+                    {renderClassificationTree(tasks)}
                 </div>
              </div>
           )}
@@ -248,7 +278,7 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
             
             {step === 2 && (
                 <>
-                    <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
+                    <Button variant="ghost" onClick={handleBackStep2}>Back</Button>
                     <div className="flex-1" />
                     <Button variant="outline" onClick={handleBranchMore}>Branch More</Button>
                     <Button onClick={handleFinishSetup}>Finish Setup</Button>
@@ -267,3 +297,5 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
     </Sheet>
   );
 }
+
+    
