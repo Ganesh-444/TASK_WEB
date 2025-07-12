@@ -184,7 +184,7 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
         <div className="flex flex-col">
             <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/20 my-1">
                 {hasSubtasks && (
-                    <button onClick={() => setIsOpen(!isOpen)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
+                    <button onClick={() => setIsOpen(!isOpen)} className="p-1 text-muted-foreground hover:text-foreground">
                         <ChevronRight className={cn("h-4 w-4 transition-transform", isOpen && "rotate-90")} />
                     </button>
                 )}
