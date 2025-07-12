@@ -70,14 +70,20 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
 
     parsedTasks.forEach(task => {
       if (task.isMain) {
-        currentMainTask = { ...task, subTasks: [] };
-        hierarchical.push(currentMainTask);
+        // This task is a main quest. Create a new object for it.
+        const newMainTask = { ...task, subTasks: [] };
+        hierarchical.push(newMainTask);
+        currentMainTask = newMainTask; // Set this as the current main task to attach subtasks to.
       } else {
+        // This is a subtask.
         if (currentMainTask) {
+          // If we have a current main task, add this as a subtask to it.
           currentMainTask.subTasks.push(task);
         } else {
-          // If a subtask appears before any main task, treat it as a main task
-          hierarchical.push({ ...task, isMain: true });
+          // If a subtask appears before any main task, treat it as a main task by default.
+          const newMainTask = { ...task, isMain: true, subTasks: [] };
+          hierarchical.push(newMainTask);
+          currentMainTask = newMainTask;
         }
       }
     });
@@ -85,12 +91,14 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
   };
 
   const handleProceedToConfig = () => {
-    const mainTasks = parsedTasks.filter(t => t.isMain);
+    const hierarchical = getHierarchicalTasks();
+    const mainTasks = hierarchical.filter(t => t.isMain);
     if (mainTasks.length === 0) {
       toast({ title: 'No Main Quests', description: 'Please designate at least one item as a main quest.', variant: 'destructive' });
       return;
     }
-    setParsedTasks(mainTasks.map(t => ({...t, xp: 50, attribute: 'skills', category: 'main'})));
+    // Pass the hierarchical structure to the config step
+    setParsedTasks(hierarchical.map(t => ({...t, xp: 50, attribute: 'skills', category: 'main'})));
     setStep(3);
   };
   
@@ -99,11 +107,7 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
   }
 
   const handleFinish = () => {
-    const hierarchical = getHierarchicalTasks();
-    
-    const finalTasks: Task[] = hierarchical.map(main => {
-      const mainConfig = parsedTasks.find(p => p.id === main.id);
-      
+    const finalTasks: Task[] = parsedTasks.map(main => {
       const newSubTasks: SubTask[] = main.subTasks.map(sub => ({
         id: `subtask-${Date.now()}-${Math.random()}`,
         title: sub.title,
@@ -113,9 +117,9 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
       return {
         id: `task-${Date.now()}-${Math.random()}`,
         title: main.title,
-        xp: mainConfig?.xp ?? 0,
-        attribute: mainConfig?.attribute ?? 'skills',
-        category: mainConfig?.category ?? 'main',
+        xp: main.xp ?? 0,
+        attribute: main.attribute ?? 'skills',
+        category: main.category ?? 'main',
         subTasks: newSubTasks
       };
     });
@@ -154,14 +158,14 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
                 rows={15}
-                placeholder={"Task 1\n  - Subtask 1.1\nTask 2\nTask 3"}
+                placeholder={"Task 1\nTask 2\nTask 3\nTask 4\nTask 5"}
               />
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-2 py-4">
-              {hierarchicalDisplay.map(task => (
+              {parsedTasks.map(task => (
                 <div key={task.id} className="p-2 rounded-md bg-secondary/30 border border-transparent">
                   <div className="flex items-center gap-2">
                     <Button
@@ -172,6 +176,16 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
                       {task.isMain ? 'Main Quest' : 'Make Main'}
                     </Button>
                     <span className="font-medium">{task.title}</span>
+                  </div>
+                </div>
+              ))}
+              <Separator className="my-4" />
+              <h3 className="text-lg font-semibold">Preview</h3>
+              {hierarchicalDisplay.map(task => (
+                <div key={task.id} className="p-2 rounded-md">
+                   <div className="flex items-center gap-2">
+                      <Badge>Main</Badge>
+                      <span className="font-medium">{task.title}</span>
                   </div>
                   {task.subTasks.length > 0 && (
                     <div className="pl-8 mt-1 space-y-1">
@@ -230,7 +244,20 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
         </div>
 
         <SheetFooter className="pt-4 border-t">
-            {step > 1 && <Button variant="ghost" onClick={() => setStep(step - 1)}>Back</Button>}
+            {step > 1 && <Button variant="ghost" onClick={() => {
+                if(step === 3) {
+                  // Revert parsedTasks to flat list when going back from config
+                  const lines = pastedText.split('\n').filter(line => line.trim() !== '');
+                  const tasks = lines.map(line => ({
+                    id: `parsed-${Date.now()}-${Math.random()}`,
+                    title: line.trim(),
+                    isMain: parsedTasks.find(pt => pt.title === line.trim())?.isMain ?? false,
+                    subTasks: []
+                  }));
+                  setParsedTasks(tasks)
+                }
+                setStep(step - 1)
+              }}>Back</Button>}
             <div className="flex-1" />
             {step === 1 && <Button onClick={handleParseText}>Next: Organize</Button>}
             {step === 2 && <Button onClick={handleProceedToConfig}>Next: Configure</Button>}
@@ -240,3 +267,5 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
     </Sheet>
   );
 }
+
+    
