@@ -1182,7 +1182,3 @@ export default function LevelUpApp() {
     </>
   );
 }
-
-    
-
-    
