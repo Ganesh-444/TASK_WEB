@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle, GraduationCap, ChevronRight, Layers
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle, GraduationCap, ChevronRight, Layers, Bot
 } from 'lucide-react';
 import { format } from "date-fns";
 
@@ -36,7 +36,7 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
 import { Stopwatch } from './stopwatch';
 import { ReaperIcon } from './reaper-icon';
-import { BulkAddSheet } from './bulk-add-sheet';
+import { BreakdownSheet } from './breakdown-sheet';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -84,7 +84,7 @@ export default function LevelUpApp() {
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
   const [isManageTemplatesOpen, setManageTemplatesOpen] = useState(false);
   const [isHistorySheetOpen, setHistorySheetOpen] = useState(false);
-  const [isBulkAddSheetOpen, setIsBulkAddSheetOpen] = useState(false);
+  const [isBreakdownSheetOpen, setIsBreakdownSheetOpen] = useState(false);
 
   const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 0, newLevel: 0, dialogOpen: false });
 
@@ -446,15 +446,14 @@ export default function LevelUpApp() {
     setAddQuestDialogOpen(false);
   };
 
-  const handleBulkAddTasks = (newQuests: Task[]) => {
+  const handleAddTaskFromBreakdown = (newTask: Task) => {
     setTasks(prev => ({
       ...prev,
-      main: [...prev.main, ...newQuests.filter(q => q.category === 'main')],
-      daily: [...prev.daily, ...newQuests.filter(q => q.category === 'daily')]
+      [newTask.category]: [...prev[newTask.category], newTask]
     }));
     toast({
-      title: 'Quests Added!',
-      description: `Successfully added ${newQuests.length} new quests.`,
+      title: 'Quest Added!',
+      description: `Successfully added new quest: ${newTask.title}.`,
     });
   };
   
@@ -513,44 +512,114 @@ export default function LevelUpApp() {
     ).length;
   }, [completedTasks, isMounted]);
 
-  const handleToggleSubTask = (taskId: string, subTaskId: string, category: 'daily' | 'main') => {
-    let parentTask: Task | undefined;
-    const newTasks = {
-      daily: tasks.daily.map(t => {
-        if (t.id === taskId) {
-          parentTask = t;
-          const newSubTasks = t.subTasks?.map(st => st.id === subTaskId ? { ...st, completed: !st.completed } : st);
-          return { ...t, subTasks: newSubTasks };
-        }
-        return t;
-      }),
-      main: tasks.main.map(t => {
-        if (t.id === taskId) {
-          parentTask = t;
-          const newSubTasks = t.subTasks?.map(st => st.id === subTaskId ? { ...st, completed: !st.completed } : st);
-          return { ...t, subTasks: newSubTasks };
-        }
-        return t;
-      })
-    };
-    
-    setTasks(newTasks);
+  const handleToggleSubTask = (taskId: string, subTaskPath: string[], category: 'daily' | 'main') => {
+      let parentTaskAttribute: Attribute = 'skills';
+      
+      const toggleRecursively = (subTasks: SubTask[], path: string[]): { updatedTasks: SubTask[], allChildrenDone: boolean } => {
+          const currentSubTaskId = path[0];
+          const remainingPath = path.slice(1);
+          let allChildrenDone = false;
 
-    // Check if all subtasks are now complete
-    const updatedParentTask = newTasks[category].find(t => t.id === taskId);
-    if (updatedParentTask && updatedParentTask.subTasks?.every(st => st.completed)) {
-        setTimeout(() => { // Delay to allow state update to render
-            handleCompleteTask(taskId, category);
-            toast({
-                title: "Parent Quest Complete!",
-                description: `All sub-quests for "${updatedParentTask.title}" are done!`,
-            });
-        }, 300);
-    }
+          const updatedTasks = subTasks.map(st => {
+              if (st.id === currentSubTaskId) {
+                  // This is the sub-task (or an ancestor of it) we are looking for.
+                  if (remainingPath.length > 0 && st.subTasks) {
+                      // We need to go deeper.
+                      const result = toggleRecursively(st.subTasks, remainingPath);
+                      const updatedSubTask = { ...st, subTasks: result.updatedTasks };
+                      
+                      if (result.allChildrenDone) {
+                          // The nested call reported all its children are done, so we complete this task.
+                          handleXpChange(updatedSubTask.xp, parentTaskAttribute);
+                          return { ...updatedSubTask, completed: true };
+                      }
+                      return updatedSubTask;
+                  } else {
+                      // This is the target sub-task. Toggle it.
+                      const toggledTask = { ...st, completed: !st.completed };
+                      if (toggledTask.completed) {
+                          handleXpChange(toggledTask.xp, parentTaskAttribute);
+                      } else {
+                          handleXpChange(-toggledTask.xp, parentTaskAttribute);
+                      }
+                      return toggledTask;
+                  }
+              }
+              return st;
+          });
+
+          // Check if all direct children are now complete.
+          allChildrenDone = updatedTasks.every(st => st.completed);
+
+          return { updatedTasks, allChildrenDone };
+      };
+
+      setTasks(prev => {
+          const newTasks = { ...prev };
+          newTasks[category] = newTasks[category].map(t => {
+              if (t.id === taskId) {
+                  parentTaskAttribute = t.attribute;
+                  if (!t.subTasks) return t;
+                  
+                  const result = toggleRecursively(t.subTasks, subTaskPath);
+                  const updatedTask = { ...t, subTasks: result.updatedTasks };
+                  
+                  if (result.allChildrenDone) {
+                      // All top-level subtasks are done, complete the main quest
+                      setTimeout(() => handleCompleteTask(taskId, category), 100);
+                  }
+                  
+                  return updatedTask;
+              }
+              return t;
+          });
+          return newTasks;
+      });
+  };
+
+  const SubTaskItem = ({ subTask, path, onToggle }: { subTask: SubTask, path: string[], onToggle: (path: string[]) => void }) => {
+      const [isSubtasksVisible, setSubtasksVisible] = useState(true);
+      const hasSubtasks = subTask.subTasks && subTask.subTasks.length > 0;
+      
+      return (
+          <div className="flex flex-col">
+              <div className="flex items-center space-x-2">
+                  {hasSubtasks && (
+                      <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
+                         <ChevronRight className={cn("h-4 w-4 transition-transform", isSubtasksVisible && "rotate-90")} />
+                      </button>
+                  )}
+                  <Checkbox 
+                      id={`subtask-${subTask.id}`}
+                      checked={subTask.completed} 
+                      onCheckedChange={() => onToggle(path)}
+                      disabled={hasSubtasks && !subTask.completed}
+                  />
+                  <label htmlFor={`subtask-${subTask.id}`} className={cn("text-sm flex-1", subTask.completed && "line-through text-muted-foreground")}>
+                      {subTask.title}
+                  </label>
+                  <Badge variant={subTask.completed ? "secondary" : "outline"} className="text-xs">{subTask.xp} XP</Badge>
+              </div>
+              <AnimatePresence>
+              {hasSubtasks && isSubtasksVisible && (
+                   <motion.div
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: '0.5rem' }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      className="pl-6 space-y-2 border-l border-dashed border-primary/30 ml-3"
+                  >
+                      {subTask.subTasks?.map(st => (
+                          <SubTaskItem key={st.id} subTask={st} path={[...path, st.id]} onToggle={onToggle} />
+                      ))}
+                   </motion.div>
+              )}
+              </AnimatePresence>
+          </div>
+      );
   };
 
 
-  const TaskItem = ({ task, onComplete, onDelete, onStart, onToggleSubTask }: {task: Task, onComplete: () => void, onDelete: () => void, onStart: () => void, onToggleSubTask: (subTaskId: string) => void }) => {
+  const TaskItem = ({ task, onComplete, onDelete, onStart, onToggleSubTask }: {task: Task, onComplete: () => void, onDelete: () => void, onStart: () => void, onToggleSubTask: (subTaskPath: string[]) => void }) => {
     const [remainingTime, setRemainingTime] = useState('');
     const [isSubtasksVisible, setSubtasksVisible] = useState(true);
 
@@ -570,7 +639,7 @@ export default function LevelUpApp() {
 
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / 1000 * 60);
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
             setRemainingTime(
@@ -615,7 +684,7 @@ export default function LevelUpApp() {
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             {hasSubtasks && (
-                <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 -ml-1">
+                <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
                    <ChevronRight className={cn("h-4 w-4 transition-transform", isSubtasksVisible && "rotate-90")} />
                 </button>
             )}
@@ -653,16 +722,7 @@ export default function LevelUpApp() {
                 className="pl-8 space-y-2"
             >
                 {task.subTasks?.map(subTask => (
-                    <div key={subTask.id} className="flex items-center space-x-2">
-                        <Checkbox 
-                            id={`subtask-${subTask.id}`}
-                            checked={subTask.completed} 
-                            onCheckedChange={() => onToggleSubTask(subTask.id)}
-                        />
-                        <label htmlFor={`subtask-${subTask.id}`} className={cn("text-sm", subTask.completed && "line-through text-muted-foreground")}>
-                            {subTask.title}
-                        </label>
-                    </div>
+                     <SubTaskItem key={subTask.id} subTask={subTask} path={[subTask.id]} onToggle={(path) => onToggleSubTask(path)} />
                 ))}
             </motion.div>
         )}
@@ -743,7 +803,7 @@ export default function LevelUpApp() {
                     <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
                         {completedTasks.length > 0 ? (
                             completedTasks.map(task => (
-                                <div key={task.id} className="p-3 rounded-lg bg-secondary/30 border border-primary/20">
+                                <div key={`${task.id}-${task.completedAt}`} className="p-3 rounded-lg bg-secondary/30 border border-primary/20">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <p className="font-medium">{task.title}</p>
@@ -798,10 +858,10 @@ export default function LevelUpApp() {
       />
       <ManageTemplatesDialog />
       <HistorySheet />
-      <BulkAddSheet
-        open={isBulkAddSheetOpen}
-        onOpenChange={setIsBulkAddSheetOpen}
-        onAddTasks={handleBulkAddTasks}
+      <BreakdownSheet
+        open={isBreakdownSheetOpen}
+        onOpenChange={setIsBreakdownSheetOpen}
+        onAddTask={handleAddTaskFromBreakdown}
        />
 
       <div className="min-h-screen bg-background text-foreground font-body">
@@ -869,7 +929,7 @@ export default function LevelUpApp() {
                       <div className="space-y-2">
                         <AnimatePresence>
                           {tasks.daily.length > 0 ? tasks.daily.map(task => (
-                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} onToggleSubTask={(subTaskId) => handleToggleSubTask(task.id, subTaskId, 'daily')} />
+                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} onToggleSubTask={(subTaskPath) => handleToggleSubTask(task.id, subTaskPath, 'daily')} />
                           )) : <p className="text-muted-foreground p-4 text-center">No daily quests for today. Add one!</p>}
                         </AnimatePresence>
                       </div>
@@ -881,7 +941,7 @@ export default function LevelUpApp() {
                       <div className="space-y-2">
                         <AnimatePresence>
                           {tasks.main.length > 0 ? tasks.main.map(task => (
-                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')} onToggleSubTask={(subTaskId) => handleToggleSubTask(task.id, subTaskId, 'main')} />
+                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')} onToggleSubTask={(subTaskPath) => handleToggleSubTask(task.id, subTaskPath, 'main')} />
                           )) : <p className="text-muted-foreground p-4 text-center">Your adventure awaits. Add a main quest!</p>}
                          </AnimatePresence>
                       </div>
@@ -914,9 +974,9 @@ export default function LevelUpApp() {
                         </DialogHeader>
                         
                         <div className="flex-1 overflow-y-auto -mr-6 pr-6 space-y-4">
-                             <Button variant="outline" className="w-full" onClick={() => {setAddQuestDialogOpen(false); setIsBulkAddSheetOpen(true); }}>
-                                <Layers className="mr-2 h-4 w-4" />
-                                Bulk Add Quests from Clipboard
+                             <Button variant="outline" className="w-full" onClick={() => {setAddQuestDialogOpen(false); setIsBreakdownSheetOpen(true); }}>
+                                <Bot className="mr-2 h-4 w-4" />
+                                AI Quest Breakdown
                             </Button>
                             <div className="space-y-2">
                                 <DropdownMenu>

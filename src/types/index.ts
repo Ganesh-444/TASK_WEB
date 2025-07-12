@@ -4,10 +4,12 @@ export type SubTask = {
   id: string;
   title: string;
   completed: boolean;
+  xp: number;
+  subTasks?: SubTask[];
 };
 
 export type Task = {
-  id: string;
+  id:string;
   title: string;
   description?: string;
   count?: number;
