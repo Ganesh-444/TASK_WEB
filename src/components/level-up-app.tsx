@@ -548,6 +548,17 @@ export default function LevelUpApp() {
                       } else {
                           handleXpChange(-toggledTask.xp, parentTaskAttribute);
                       }
+                      // If it has children, we need to decide if this one should complete.
+                      // For now, only leaf nodes can be toggled manually.
+                      // A parent sub-task completes when all its children complete.
+                      const allChildrenCompleted = toggledTask.subTasks ? toggledTask.subTasks.every(child => child.completed) : true;
+                      
+                      if(toggledTask.completed && !allChildrenCompleted && (toggledTask.subTasks && toggledTask.subTasks.length > 0)) {
+                          // Don't mark parent as complete if children aren't.
+                          // This case needs more sophisticated logic, for now we just toggle and let children drive completion.
+                          // Let's assume for now only leaf nodes award XP directly on toggle.
+                          // Parent node XP is awarded when all children are done.
+                      }
                       return toggledTask;
                   }
               }
@@ -599,6 +610,7 @@ export default function LevelUpApp() {
                       id={`subtask-${subTask.id}`}
                       checked={subTask.completed} 
                       onCheckedChange={() => onToggle(path)}
+                      // A parent sub-task is disabled and completed only when all children are.
                       disabled={hasSubtasks && !subTask.completed}
                   />
                   <label htmlFor={`subtask-${subTask.id}`} className={cn("text-sm flex-1", subTask.completed && "line-through text-muted-foreground")}>
@@ -685,8 +697,8 @@ export default function LevelUpApp() {
       exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
       className="flex flex-col p-4 rounded-lg bg-card/50 hover:bg-secondary/20 transition-colors duration-200 border border-primary/20"
     >
-      <div className="flex items-center space-x-4">
-        <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} disabled={hasSubtasks} />
+      <div className="flex items-start space-x-4">
+        <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} disabled={hasSubtasks} className="mt-1"/>
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             {hasSubtasks && (
@@ -696,9 +708,9 @@ export default function LevelUpApp() {
             )}
             <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
           </div>
-          {taskDetail && <p className="text-sm text-muted-foreground">{taskDetail}</p>}
+          {taskDetail && <p className="text-sm text-muted-foreground pl-5">{taskDetail}</p>}
           {task.deadline && (
-              <div className={cn("text-sm flex items-center gap-2 mt-1", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+              <div className={cn("text-sm flex items-center gap-2 mt-1 pl-5", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                   <Clock className="h-3 w-3" />
                   {!task.startedAt ? (
                       <>
@@ -714,10 +726,12 @@ export default function LevelUpApp() {
               </div>
           )}
         </div>
-        <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={onDelete}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="text-right">
+            <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8 mt-1" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+        </div>
       </div>
       <AnimatePresence>
         {hasSubtasks && isSubtasksVisible && (
