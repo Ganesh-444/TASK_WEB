@@ -700,12 +700,14 @@ export default function LevelUpApp() {
       <div className="flex items-start">
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
-            <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} disabled={hasSubtasks} className="mt-1"/>
-            {hasSubtasks && (
-                <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 text-muted-foreground hover:text-foreground">
-                   <ChevronRight className={cn("h-4 w-4 transition-transform", isSubtasksVisible && "rotate-90")} />
-                </button>
-            )}
+            <div className="flex items-center space-x-2">
+                {hasSubtasks && (
+                    <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
+                       <ChevronRight className={cn("h-4 w-4 transition-transform", isSubtasksVisible && "rotate-90")} />
+                    </button>
+                )}
+                <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} disabled={hasSubtasks} />
+            </div>
             <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
           </div>
           {taskDetail && <p className="text-sm text-muted-foreground pl-12">{taskDetail}</p>}
@@ -1180,5 +1182,7 @@ export default function LevelUpApp() {
     </>
   );
 }
+
+    
 
     
