@@ -181,14 +181,14 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
     const hasSubtasks = task.subTasks && task.subTasks.length > 0;
     
     return (
-        <div className="flex flex-col">
+        <div>
             <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/20 my-1">
                 {hasSubtasks && (
                     <button onClick={() => setIsOpen(!isOpen)} className="p-1 text-muted-foreground hover:text-foreground">
                         <ChevronRight className={cn("h-4 w-4 transition-transform", isOpen && "rotate-90")} />
                     </button>
                 )}
-                {!hasSubtasks && task.level > 0 && <div className="w-5 h-4" />}
+                {!hasSubtasks && <div className="w-5 h-4" />}
                 <span className="flex-1 font-medium">{task.title}</span>
                 <Badge variant="outline">Level {task.level}</Badge>
             </div>
@@ -198,7 +198,7 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="space-y-0 border-l border-dashed ml-6"
+                        className="ml-6 space-y-0 border-l border-dashed"
                     >
                         {task.subTasks?.map(st => <TaskReviewItem key={st.id} task={st} />)}
                     </motion.div>
@@ -225,7 +225,6 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
 
   const renderClassificationTree = (nodes: HierarchicalTask[]) => {
     return nodes.map(node => {
-        // Only render the button if the task is at the current classification level or one level above
         const showButton = node.level >= classificationLevel;
         return (
             <React.Fragment key={node.id}>
