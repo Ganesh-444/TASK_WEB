@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, SubTask, Attribute } from '@/types';
-import { Brain, Dumbbell, GraduationCap, Swords, Flame, ShieldCheck } from 'lucide-react';
+import { Brain, Dumbbell, GraduationCap, Swords, Flame, ShieldCheck, Sparkles } from 'lucide-react';
+import { getXpSuggestion } from '@/app/actions';
 
 type BulkAddSheetProps = {
   open: boolean;
@@ -30,6 +31,7 @@ type ParsedTask = {
   xp?: number;
   attribute?: Attribute;
   category?: 'daily' | 'main';
+  isSuggesting?: boolean;
 };
 
 export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetProps) {
@@ -55,13 +57,11 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
   };
 
   const handleToggleMainTask = (taskId: string) => {
-    setParsedTasks(currentTasks => {
-      const task = currentTasks.find(t => t.id === taskId);
-      if (task) {
-        task.isMain = !task.isMain;
-      }
-      return [...currentTasks];
-    });
+    setParsedTasks(currentTasks =>
+      currentTasks.map(t => 
+        t.id === taskId ? { ...t, isMain: !t.isMain } : t
+      )
+    );
   };
 
   const getHierarchicalTasks = () => {
@@ -92,13 +92,8 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
 
   const handleProceedToConfig = () => {
     const hierarchical = getHierarchicalTasks();
-    const mainTasks = hierarchical.filter(t => t.isMain);
-    if (mainTasks.length === 0) {
-      toast({ title: 'No Main Quests', description: 'Please designate at least one item as a main quest.', variant: 'destructive' });
-      return;
-    }
-    // Pass the hierarchical structure to the config step
-    setParsedTasks(hierarchical.map(t => ({...t, xp: 50, attribute: 'skills', category: 'main'})));
+    const mainTasksWithConfig = hierarchical.map(t => ({...t, xp: 50, attribute: 'skills' as Attribute, category: 'main' as 'daily' | 'main'}));
+    setParsedTasks(mainTasksWithConfig);
     setStep(3);
   };
   
@@ -106,8 +101,28 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
     setParsedTasks(tasks => tasks.map(t => t.id === id ? {...t, [field]: value} : t));
   }
 
+  const handleSuggestXpForTask = async (taskId: string) => {
+    const task = parsedTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    setParsedTasks(tasks => tasks.map(t => t.id === taskId ? { ...t, isSuggesting: true } : t));
+    
+    const result = await getXpSuggestion(task.title);
+
+    setParsedTasks(tasks => tasks.map(t => 
+        t.id === taskId 
+        ? { ...t, xp: result.suggestedXpValue, isSuggesting: false } 
+        : t
+    ));
+
+    toast({
+        title: `Suggested ${result.suggestedXpValue} XP`,
+        description: result.reasoning
+    });
+  }
+
   const handleFinish = () => {
-    const finalTasks: Task[] = parsedTasks.map(main => {
+    const finalTasks: Task[] = parsedTasks.filter(t => t.isMain).map(main => {
       const newSubTasks: SubTask[] = main.subTasks.map(sub => ({
         id: `subtask-${Date.now()}-${Math.random()}`,
         title: sub.title,
@@ -207,7 +222,12 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor={`xp-${index}`}>XP</Label>
-                                <Input id={`xp-${index}`} type="number" value={task.xp} onChange={(e) => handleConfigChange(task.id, 'xp', Number(e.target.value))} />
+                                <div className="flex items-center gap-2">
+                                  <Input id={`xp-${index}`} type="number" value={task.xp} onChange={(e) => handleConfigChange(task.id, 'xp', Number(e.target.value))} />
+                                  <Button type="button" variant="outline" size="icon" onClick={() => handleSuggestXpForTask(task.id)} disabled={task.isSuggesting}>
+                                    <Sparkles className={`h-4 w-4 ${task.isSuggesting ? 'animate-spin' : ''}`} />
+                                  </Button>
+                                </div>
                             </div>
                              <div>
                                 <Label htmlFor={`attribute-${index}`}>Attribute</Label>
@@ -248,12 +268,16 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
                 if(step === 3) {
                   // Revert parsedTasks to flat list when going back from config
                   const lines = pastedText.split('\n').filter(line => line.trim() !== '');
-                  const tasks = lines.map(line => ({
-                    id: `parsed-${Date.now()}-${Math.random()}`,
-                    title: line.trim(),
-                    isMain: parsedTasks.find(pt => pt.title === line.trim())?.isMain ?? false,
-                    subTasks: []
-                  }));
+                  const oldParsedTasks = getHierarchicalTasks();
+                  const tasks = lines.map(line => {
+                    const originalTask = oldParsedTasks.find(pt => pt.title === line.trim()) || oldParsedTasks.flatMap(m => m.subTasks).find(st => st.title === line.trim());
+                    return {
+                      id: originalTask?.id ?? `parsed-${Date.now()}-${Math.random()}`,
+                      title: line.trim(),
+                      isMain: originalTask?.isMain ?? false,
+                      subTasks: []
+                    };
+                  });
                   setParsedTasks(tasks)
                 }
                 setStep(step - 1)
@@ -267,5 +291,3 @@ export function BulkAddSheet({ open, onOpenChange, onAddTasks }: BulkAddSheetPro
     </Sheet>
   );
 }
-
-    
