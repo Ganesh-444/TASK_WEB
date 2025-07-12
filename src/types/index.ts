@@ -1,5 +1,11 @@
 export type Attribute = 'str' | 'int' | 'skills' | 'academics';
 
+export type SubTask = {
+  id: string;
+  title: string;
+  completed: boolean;
+};
+
 export type Task = {
   id: string;
   title: string;
@@ -14,6 +20,7 @@ export type Task = {
   startedAt?: string;
   levelAtCompletion?: number;
   isFailure?: boolean;
+  subTasks?: SubTask[];
 };
 
 export type QuestTemplate = {

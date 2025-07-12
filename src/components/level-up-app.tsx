@@ -5,11 +5,11 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle, GraduationCap
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle, GraduationCap, ChevronRight, Layers
 } from 'lucide-react';
 import { format } from "date-fns";
 
-import type { Task, QuestTemplate, Attribute } from '@/types';
+import type { Task, QuestTemplate, Attribute, SubTask } from '@/types';
 import { calculateLevelInfo } from '@/lib/xp-utils';
 import { getXpSuggestion } from '@/app/actions';
 
@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
 import { Stopwatch } from './stopwatch';
 import { ReaperIcon } from './reaper-icon';
+import { BulkAddSheet } from './bulk-add-sheet';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -83,6 +84,7 @@ export default function LevelUpApp() {
   const [isAddQuestDialogOpen, setAddQuestDialogOpen] = useState(false);
   const [isManageTemplatesOpen, setManageTemplatesOpen] = useState(false);
   const [isHistorySheetOpen, setHistorySheetOpen] = useState(false);
+  const [isBulkAddSheetOpen, setIsBulkAddSheetOpen] = useState(false);
 
   const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 0, newLevel: 0, dialogOpen: false });
 
@@ -217,7 +219,7 @@ export default function LevelUpApp() {
 
                 const failedTask: Task = {
                     ...task,
-                    id: `${task.id}-failed-${Date.now()}`,
+                    id: `${task.id}-failed-${Date.now()}-${Math.random()}`,
                     completedAt: now.toISOString(),
                     levelAtCompletion: userLevelInfo.level,
                     isFailure: true,
@@ -443,6 +445,18 @@ export default function LevelUpApp() {
     setSuggestion(null);
     setAddQuestDialogOpen(false);
   };
+
+  const handleBulkAddTasks = (newQuests: Task[]) => {
+    setTasks(prev => ({
+      ...prev,
+      main: [...prev.main, ...newQuests.filter(q => q.category === 'main')],
+      daily: [...prev.daily, ...newQuests.filter(q => q.category === 'daily')]
+    }));
+    toast({
+      title: 'Quests Added!',
+      description: `Successfully added ${newQuests.length} new quests.`,
+    });
+  };
   
   const handleSuggestXp = async () => {
     if (!newTaskTitle) {
@@ -499,8 +513,46 @@ export default function LevelUpApp() {
     ).length;
   }, [completedTasks, isMounted]);
 
-  const TaskItem = ({ task, onComplete, onDelete, onStart }: {task: Task, onComplete: () => void, onDelete: () => void, onStart: () => void}) => {
+  const handleToggleSubTask = (taskId: string, subTaskId: string, category: 'daily' | 'main') => {
+    let parentTask: Task | undefined;
+    const newTasks = {
+      daily: tasks.daily.map(t => {
+        if (t.id === taskId) {
+          parentTask = t;
+          const newSubTasks = t.subTasks?.map(st => st.id === subTaskId ? { ...st, completed: !st.completed } : st);
+          return { ...t, subTasks: newSubTasks };
+        }
+        return t;
+      }),
+      main: tasks.main.map(t => {
+        if (t.id === taskId) {
+          parentTask = t;
+          const newSubTasks = t.subTasks?.map(st => st.id === subTaskId ? { ...st, completed: !st.completed } : st);
+          return { ...t, subTasks: newSubTasks };
+        }
+        return t;
+      })
+    };
+    
+    setTasks(newTasks);
+
+    // Check if all subtasks are now complete
+    const updatedParentTask = newTasks[category].find(t => t.id === taskId);
+    if (updatedParentTask && updatedParentTask.subTasks?.every(st => st.completed)) {
+        setTimeout(() => { // Delay to allow state update to render
+            handleCompleteTask(taskId, category);
+            toast({
+                title: "Parent Quest Complete!",
+                description: `All sub-quests for "${updatedParentTask.title}" are done!`,
+            });
+        }, 300);
+    }
+  };
+
+
+  const TaskItem = ({ task, onComplete, onDelete, onStart, onToggleSubTask }: {task: Task, onComplete: () => void, onDelete: () => void, onStart: () => void, onToggleSubTask: (subTaskId: string) => void }) => {
     const [remainingTime, setRemainingTime] = useState('');
+    const [isSubtasksVisible, setSubtasksVisible] = useState(true);
 
     useEffect(() => {
         if (!task.startedAt || !task.deadline) return;
@@ -548,39 +600,73 @@ export default function LevelUpApp() {
     
     const isOverdue = task.deadline && new Date() > new Date(task.deadline);
 
+    const hasSubtasks = task.subTasks && task.subTasks.length > 0;
+
     return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
-      className="flex items-center space-x-4 p-4 rounded-lg bg-card/50 hover:bg-secondary/20 transition-colors duration-200 border border-primary/20"
+      className="flex flex-col p-4 rounded-lg bg-card/50 hover:bg-secondary/20 transition-colors duration-200 border border-primary/20"
     >
-      <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} />
-      <div className="flex-1 space-y-1">
-        <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
-        {taskDetail && <p className="text-sm text-muted-foreground">{taskDetail}</p>}
-        {task.deadline && (
-            <div className={cn("text-sm flex items-center gap-2 mt-1", isOverdue ? "text-destructive" : "text-muted-foreground")}>
-                <Clock className="h-3 w-3" />
-                {!task.startedAt ? (
-                    <>
-                        <span>Due: {format(new Date(task.deadline), "PPp")}</span>
-                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={onStart}>
-                            <Play className="h-3 w-3 mr-1" />
-                            Start
-                        </Button>
-                    </>
-                ) : (
-                    <span className="font-mono text-base">{remainingTime || '...'}</span>
-                )}
-            </div>
-        )}
+      <div className="flex items-center space-x-4">
+        <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} disabled={hasSubtasks} />
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            {hasSubtasks && (
+                <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 -ml-1">
+                   <ChevronRight className={cn("h-4 w-4 transition-transform", isSubtasksVisible && "rotate-90")} />
+                </button>
+            )}
+            <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
+          </div>
+          {taskDetail && <p className="text-sm text-muted-foreground">{taskDetail}</p>}
+          {task.deadline && (
+              <div className={cn("text-sm flex items-center gap-2 mt-1", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                  <Clock className="h-3 w-3" />
+                  {!task.startedAt ? (
+                      <>
+                          <span>Due: {format(new Date(task.deadline), "PPp")}</span>
+                          <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={onStart}>
+                              <Play className="h-3 w-3 mr-1" />
+                              Start
+                          </Button>
+                      </>
+                  ) : (
+                      <span className="font-mono text-base">{remainingTime || '...'}</span>
+                  )}
+              </div>
+          )}
+        </div>
+        <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={onDelete}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
-      <Badge variant="secondary" className="font-bold text-base bg-accent/20 text-accent-foreground border-accent/50">{task.xp} XP</Badge>
-      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={onDelete}>
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      <AnimatePresence>
+        {hasSubtasks && isSubtasksVisible && (
+            <motion.div
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: '1rem' }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                className="pl-8 space-y-2"
+            >
+                {task.subTasks?.map(subTask => (
+                    <div key={subTask.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                            id={`subtask-${subTask.id}`}
+                            checked={subTask.completed} 
+                            onCheckedChange={() => onToggleSubTask(subTask.id)}
+                        />
+                        <label htmlFor={`subtask-${subTask.id}`} className={cn("text-sm", subTask.completed && "line-through text-muted-foreground")}>
+                            {subTask.title}
+                        </label>
+                    </div>
+                ))}
+            </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )};
 
@@ -712,6 +798,11 @@ export default function LevelUpApp() {
       />
       <ManageTemplatesDialog />
       <HistorySheet />
+      <BulkAddSheet
+        open={isBulkAddSheetOpen}
+        onOpenChange={setIsBulkAddSheetOpen}
+        onAddTasks={handleBulkAddTasks}
+       />
 
       <div className="min-h-screen bg-background text-foreground font-body">
         <div className="container mx-auto p-4 md:p-8 max-w-5xl">
@@ -759,15 +850,13 @@ export default function LevelUpApp() {
               <div className="relative">
                 <div className="absolute top-0 right-0 text-center z-10">
                     <Popover>
-                        <PopoverTrigger>
-                            <div className="flex flex-col items-center">
-                              <ReaperIcon className="h-12 w-12" />
-                              <span className="text-sm font-bold text-destructive">({todaysCompletions}/3)</span>
-                            </div>
+                        <PopoverTrigger asChild>
+                           <Button variant="ghost" size="icon" className="h-12 w-12"><ReaperIcon className="h-12 w-12" /></Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-60">
                             <h4 className="font-medium text-destructive">Reaper's Due</h4>
                             <p className="text-sm text-muted-foreground">Complete 3 quests daily to avoid the Reaper's penalty.</p>
+                             <p className="text-sm text-muted-foreground mt-2">Today's completions: <span className="font-bold text-destructive">{todaysCompletions}/3</span></p>
                             <p className="text-sm text-muted-foreground mt-2">Consecutive failures: <span className="font-bold text-destructive">{reaperState.consecutiveFailures}</span></p>
                         </PopoverContent>
                     </Popover>
@@ -780,7 +869,7 @@ export default function LevelUpApp() {
                       <div className="space-y-2">
                         <AnimatePresence>
                           {tasks.daily.length > 0 ? tasks.daily.map(task => (
-                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} />
+                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'daily')} onDelete={() => handleDeleteTask(task.id, 'daily')} onStart={() => handleStartTask(task.id, 'daily')} onToggleSubTask={(subTaskId) => handleToggleSubTask(task.id, subTaskId, 'daily')} />
                           )) : <p className="text-muted-foreground p-4 text-center">No daily quests for today. Add one!</p>}
                         </AnimatePresence>
                       </div>
@@ -792,7 +881,7 @@ export default function LevelUpApp() {
                       <div className="space-y-2">
                         <AnimatePresence>
                           {tasks.main.length > 0 ? tasks.main.map(task => (
-                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')}/>
+                            <TaskItem key={task.id} task={task} onComplete={() => handleCompleteTask(task.id, 'main')} onDelete={() => handleDeleteTask(task.id, 'main')} onStart={() => handleStartTask(task.id, 'main')} onToggleSubTask={(subTaskId) => handleToggleSubTask(task.id, subTaskId, 'main')} />
                           )) : <p className="text-muted-foreground p-4 text-center">Your adventure awaits. Add a main quest!</p>}
                          </AnimatePresence>
                       </div>
@@ -825,6 +914,10 @@ export default function LevelUpApp() {
                         </DialogHeader>
                         
                         <div className="flex-1 overflow-y-auto -mr-6 pr-6 space-y-4">
+                             <Button variant="outline" className="w-full" onClick={() => {setAddQuestDialogOpen(false); setIsBulkAddSheetOpen(true); }}>
+                                <Layers className="mr-2 h-4 w-4" />
+                                Bulk Add Quests from Clipboard
+                            </Button>
                             <div className="space-y-2">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -983,5 +1076,3 @@ export default function LevelUpApp() {
     </>
   );
 }
-
-    
