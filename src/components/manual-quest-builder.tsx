@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -297,5 +297,3 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
     </Sheet>
   );
 }
-
-    
