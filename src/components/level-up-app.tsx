@@ -610,8 +610,8 @@ export default function LevelUpApp() {
                       id={`subtask-${subTask.id}`}
                       checked={subTask.completed} 
                       onCheckedChange={() => onToggle(path)}
-                      // A parent sub-task is disabled and completed only when all children are.
-                      disabled={hasSubtasks && !subTask.completed}
+                      // A parent sub-task is disabled and its state is driven by its children.
+                      disabled={hasSubtasks}
                   />
                   <label htmlFor={`subtask-${subTask.id}`} className={cn("text-sm flex-1", subTask.completed && "line-through text-muted-foreground")}>
                       {subTask.title}
@@ -739,7 +739,7 @@ export default function LevelUpApp() {
                 initial={{ opacity: 0, height: 0, marginTop: 0 }}
                 animate={{ opacity: 1, height: 'auto', marginTop: '1rem' }}
                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                className="pl-8 space-y-2"
+                className="pl-8 pt-2 space-y-2 border-l border-dashed border-primary/30 ml-3"
             >
                 {task.subTasks?.map(subTask => (
                      <SubTaskItem key={subTask.id} subTask={subTask} path={[subTask.id]} onToggle={(path) => onToggleSubTask(path)} />
