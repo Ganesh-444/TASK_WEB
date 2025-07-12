@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle, GraduationCap, ChevronRight, Layers, Bot
+  Flame, Swords, User, ShieldCheck, Sparkles, Plus, Check, Trophy, Trash2, Heart, Brain, Zap, Dumbbell, Shield, Wind, Diamond, Star, Menu, Edit, Settings, ChevronDown, CalendarIcon, Clock, Play, ScrollText, History, MinusCircle, PlusCircle, GraduationCap, ChevronRight, Layers, Bot, Hammer
 } from 'lucide-react';
 import { format } from "date-fns";
 
@@ -37,6 +36,7 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescri
 import { Stopwatch } from './stopwatch';
 import { ReaperIcon } from './reaper-icon';
 import { BreakdownSheet } from './breakdown-sheet';
+import { ManualQuestBuilderSheet } from './manual-quest-builder';
 
 const defaultQuestTemplates: QuestTemplate[] = [
     { id: "1", title: "Walk the dog", xp: 10, attribute: 'str' },
@@ -85,6 +85,7 @@ export default function LevelUpApp() {
   const [isManageTemplatesOpen, setManageTemplatesOpen] = useState(false);
   const [isHistorySheetOpen, setHistorySheetOpen] = useState(false);
   const [isBreakdownSheetOpen, setIsBreakdownSheetOpen] = useState(false);
+  const [isManualBuilderSheetOpen, setIsManualBuilderSheetOpen] = useState(false);
 
   const [levelUpInfo, setLevelUpInfo] = useState({ oldLevel: 0, newLevel: 0, dialogOpen: false });
 
@@ -446,14 +447,18 @@ export default function LevelUpApp() {
     setAddQuestDialogOpen(false);
   };
 
-  const handleAddTaskFromBreakdown = (newTask: Task) => {
+  const handleAddTasks = (newTasks: Task[]) => {
+    const dailyTasks = newTasks.filter(t => t.category === 'daily');
+    const mainTasks = newTasks.filter(t => t.category === 'main');
+
     setTasks(prev => ({
-      ...prev,
-      [newTask.category]: [...prev[newTask.category], newTask]
+        daily: [...prev.daily, ...dailyTasks],
+        main: [...prev.main, ...mainTasks],
     }));
+
     toast({
-      title: 'Quest Added!',
-      description: `Successfully added new quest: ${newTask.title}.`,
+        title: 'Quests Added!',
+        description: `Successfully added ${newTasks.length} new quests.`,
     });
   };
   
@@ -861,8 +866,13 @@ export default function LevelUpApp() {
       <BreakdownSheet
         open={isBreakdownSheetOpen}
         onOpenChange={setIsBreakdownSheetOpen}
-        onAddTask={handleAddTaskFromBreakdown}
+        onAddTask={(task) => handleAddTasks([task])}
        />
+      <ManualQuestBuilderSheet
+        open={isManualBuilderSheetOpen}
+        onOpenChange={setIsManualBuilderSheetOpen}
+        onAddTasks={handleAddTasks}
+      />
 
       <div className="min-h-screen bg-background text-foreground font-body">
         <div className="container mx-auto p-4 md:p-8 max-w-5xl">
@@ -970,14 +980,32 @@ export default function LevelUpApp() {
                                 Manage Templates
                               </Button>
                             </DialogTitle>
-                            <DialogDescription>What challenge will you conquer next?</DialogDescription>
+                            <DialogDescription>What challenge will you conquer next? Choose your method.</DialogDescription>
                         </DialogHeader>
                         
                         <div className="flex-1 overflow-y-auto -mr-6 pr-6 space-y-4">
-                             <Button variant="outline" className="w-full" onClick={() => {setAddQuestDialogOpen(false); setIsBreakdownSheetOpen(true); }}>
-                                <Bot className="mr-2 h-4 w-4" />
-                                AI Quest Breakdown
-                            </Button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Button variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => {setAddQuestDialogOpen(false); setIsBreakdownSheetOpen(true); }}>
+                                    <Bot className="h-6 w-6" />
+                                    <span className="font-semibold">AI Quest Breakdown</span>
+                                </Button>
+                                <Button variant="outline" className="w-full h-20 flex-col gap-2" onClick={() => {setAddQuestDialogOpen(false); setIsManualBuilderSheetOpen(true); }}>
+                                    <Hammer className="h-6 w-6" />
+                                    <span className="font-semibold">Manual Quest Builder</span>
+                                </Button>
+                            </div>
+                            
+                            <div className="relative py-4">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t" />
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-background px-2 text-muted-foreground">
+                                    Or add a simple quest
+                                    </span>
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -995,8 +1023,7 @@ export default function LevelUpApp() {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
-                            <Separator />
-
+                            
                             <form onSubmit={handleAddTask} className="space-y-6 pt-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="title">Quest Title</Label>
