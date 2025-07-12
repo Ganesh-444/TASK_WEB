@@ -176,25 +176,19 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
     onOpenChange(false);
   };
 
-  const TaskReviewItem = ({ task, baseLevel = 0 }: { task: HierarchicalTask, baseLevel?: number }) => {
+  const TaskReviewItem = ({ task }: { task: HierarchicalTask }) => {
     const [isOpen, setIsOpen] = useState(true);
     const hasSubtasks = task.subTasks && task.subTasks.length > 0;
     
-    // Calculate indentation based on the task's own level property relative to its parent's base level.
-    const indentationLevel = task.level - baseLevel;
-
     return (
-        <div 
-          className="flex flex-col"
-          style={{ marginLeft: `${indentationLevel > 1 ? (indentationLevel - 1) * 1.5 : 0}rem` }}
-        >
+        <div className="flex flex-col">
             <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/20 my-1">
                 {hasSubtasks && (
                     <button onClick={() => setIsOpen(!isOpen)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
                         <ChevronRight className={cn("h-4 w-4 transition-transform", isOpen && "rotate-90")} />
                     </button>
                 )}
-                 {!hasSubtasks && task.level > 0 && <div className="w-4 h-4 mr-1" />}
+                {!hasSubtasks && task.level > 0 && <div className="w-5 h-4" />}
                 <span className="flex-1 font-medium">{task.title}</span>
                 <Badge variant="outline">Level {task.level}</Badge>
             </div>
@@ -204,9 +198,9 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="space-y-0 border-l border-dashed ml-3"
+                        className="space-y-0 border-l border-dashed ml-6"
                     >
-                        {task.subTasks?.map(st => <TaskReviewItem key={st.id} task={st} baseLevel={task.level} />)}
+                        {task.subTasks?.map(st => <TaskReviewItem key={st.id} task={st} />)}
                     </motion.div>
                 )}
             </AnimatePresence>
