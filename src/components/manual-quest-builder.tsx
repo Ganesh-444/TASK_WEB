@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, SubTask, Attribute } from '@/types';
-import { ArrowRight, Hammer } from 'lucide-react';
+import { ArrowRight, ChevronRight, Hammer } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type ManualQuestBuilderSheetProps = {
   open: boolean;
@@ -61,18 +63,18 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
   };
   
   const toggleMainQuest = (taskId: string) => {
-    const updateRecursively = (nodes: HierarchicalTask[], targetLevel: number): HierarchicalTask[] => {
+    const updateRecursively = (nodes: HierarchicalTask[]): HierarchicalTask[] => {
       return nodes.map(node => {
         if (node.id === taskId) {
-           return { ...node, level: node.level === targetLevel ? targetLevel + 1 : targetLevel };
+           return { ...node, level: node.level === classificationLevel ? classificationLevel + 1 : classificationLevel };
         }
         if (node.subTasks.length > 0) {
-          return { ...node, subTasks: updateRecursively(node.subTasks, targetLevel) };
+          return { ...node, subTasks: updateRecursively(node.subTasks) };
         }
         return node;
       });
     };
-    setTasks(prevTasks => updateRecursively(prevTasks, classificationLevel));
+    setTasks(prevTasks => updateRecursively(prevTasks));
   };
   
   const getStructuredTasks = (nodes: HierarchicalTask[], level: number): HierarchicalTask[] => {
@@ -82,17 +84,13 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
       for (const node of nodes) {
           if (node.level === level) {
               if (currentMainTask) {
-                  // Recursively structure the sub-tasks of the previous main task before moving on
                   currentMainTask.subTasks = getStructuredTasks(currentMainTask.subTasks, level + 1);
                   structured.push(currentMainTask);
               }
-              // This is a new main task for the current classification level
               currentMainTask = { ...node, subTasks: [] };
           } else if (node.level > level && currentMainTask) {
-              // This is a sub-task for the current main task
               currentMainTask.subTasks.push(node);
           } else {
-              // This task is at a level below the current classification, or there's no active main task
               if(currentMainTask) {
                 currentMainTask.subTasks = getStructuredTasks(currentMainTask.subTasks, level + 1);
                 structured.push(currentMainTask);
@@ -178,26 +176,47 @@ export function ManualQuestBuilderSheet({ open, onOpenChange, onAddTasks }: Manu
     onOpenChange(false);
   };
 
-  const TaskReviewItem = ({ task, level = 0 }: { task: HierarchicalTask, level?: number }) => (
-    <div style={{ marginLeft: `${level * 20}px` }} className="flex flex-col">
-        <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/20">
-            <span className="flex-1 font-medium">{task.title}</span>
-            <Badge variant="outline">Level {task.level}</Badge>
+  const TaskReviewItem = ({ task }: { task: HierarchicalTask }) => {
+    const [isOpen, setIsOpen] = useState(true);
+    const hasSubtasks = task.subTasks && task.subTasks.length > 0;
+
+    return (
+        <div className="flex flex-col">
+            <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/20">
+                {hasSubtasks && (
+                    <button onClick={() => setIsOpen(!isOpen)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
+                        <ChevronRight className={cn("h-4 w-4 transition-transform", isOpen && "rotate-90")} />
+                    </button>
+                )}
+                <span className="flex-1 font-medium">{task.title}</span>
+                <Badge variant="outline">Level {task.level}</Badge>
+            </div>
+            <AnimatePresence>
+                {hasSubtasks && isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: '0.5rem' }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        className="pl-6 space-y-2 border-l border-dashed ml-3"
+                    >
+                        {task.subTasks?.map(st => <TaskReviewItem key={st.id} task={st} />)}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
-        {task.subTasks?.map(st => <TaskReviewItem key={st.id} task={st} level={level + 1} />)}
-    </div>
-  );
+    );
+  };
 
   const ClassificationItem = ({ task }: { task: HierarchicalTask }) => (
      <div style={{ marginLeft: `${(task.level - 1) * 20}px` }} className="flex items-center gap-2 p-2 rounded-md bg-secondary/20 my-1">
         <span className="flex-1 font-medium">{task.title}</span>
         {task.level === classificationLevel ? (
              <Button size="sm" variant="outline" onClick={() => toggleMainQuest(task.id)}>
-                Make Main Quest
+                Make Sub-task
             </Button>
         ) : (
             <Button size="sm" variant="secondary" onClick={() => toggleMainQuest(task.id)}>
-                Make Sub-task
+                Make Main Quest
             </Button>
         )}
      </div>
