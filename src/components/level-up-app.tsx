@@ -697,20 +697,20 @@ export default function LevelUpApp() {
       exit={{ opacity: 0, x: -50, transition: { duration: 0.3 } }}
       className="flex flex-col p-4 rounded-lg bg-card/50 hover:bg-secondary/20 transition-colors duration-200 border border-primary/20"
     >
-      <div className="flex items-start space-x-4">
-        <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} disabled={hasSubtasks} className="mt-1"/>
+      <div className="flex items-start">
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
+            <Checkbox id={`task-${task.id}`} onCheckedChange={onComplete} disabled={hasSubtasks} className="mt-1"/>
             {hasSubtasks && (
-                <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
+                <button onClick={() => setSubtasksVisible(!isSubtasksVisible)} className="p-1 text-muted-foreground hover:text-foreground">
                    <ChevronRight className={cn("h-4 w-4 transition-transform", isSubtasksVisible && "rotate-90")} />
                 </button>
             )}
             <label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer flex items-center gap-2">{attributeIcon} {task.title}</label>
           </div>
-          {taskDetail && <p className="text-sm text-muted-foreground pl-5">{taskDetail}</p>}
+          {taskDetail && <p className="text-sm text-muted-foreground pl-12">{taskDetail}</p>}
           {task.deadline && (
-              <div className={cn("text-sm flex items-center gap-2 mt-1 pl-5", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+              <div className={cn("text-sm flex items-center gap-2 mt-1 pl-12", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                   <Clock className="h-3 w-3" />
                   {!task.startedAt ? (
                       <>
@@ -1180,3 +1180,5 @@ export default function LevelUpApp() {
     </>
   );
 }
+
+    
