@@ -29,6 +29,7 @@ export function Stopwatch() {
   const [showControls, setShowControls] = useState(true);
 
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const resetControlsTimeout = () => {
     if (controlsTimeoutRef.current) {
@@ -68,6 +69,44 @@ export function Stopwatch() {
       if (interval) {
         clearInterval(interval);
       }
+    };
+  }, [isActive, isPaused]);
+
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator && isActive && !isPaused) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.error(`Failed to acquire wake lock: ${err}`);
+        }
+      }
+    };
+
+    const releaseWakeLock = async () => {
+      if (wakeLockRef.current) {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      }
+    };
+
+    if (isActive && !isPaused) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+    
+    const handleVisibilityChange = () => {
+        if(document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      releaseWakeLock();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isActive, isPaused]);
 
